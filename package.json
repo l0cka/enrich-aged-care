@@ -1,0 +1,51 @@
+{
+  "name": "enrich-aged-care",
+  "version": "1.0.0",
+  "description": "A public Next.js explorer for enriched aged care legislation",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "ingest": "tsx scripts/ingest.ts",
+    "lint": "eslint .",
+    "start": "next start",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:e2e": "playwright test",
+    "test:unit": "vitest run --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/l0cka/enrich-aged-care.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/l0cka/enrich-aged-care/issues"
+  },
+  "homepage": "https://github.com/l0cka/enrich-aged-care#readme",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "isaacus": "^0.13.0",
+    "mammoth": "^1.12.0",
+    "next": "^16.1.7",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.1.0",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.1.7",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}
