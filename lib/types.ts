@@ -145,3 +145,17 @@ export type EnrichedInstrumentBundle = {
   frontMatterIds: string[];
   endnoteIds: string[];
 };
+
+// ── Citation Clipboard ──────────────────────────────────────────
+
+export type CollectionItem = {
+  segmentId: string;
+  instrumentSlug: string;
+  note: string;
+  addedAt: number;
+};
+
+export type CollectionStore = {
+  version: 1;
+  items: CollectionItem[];
+};
