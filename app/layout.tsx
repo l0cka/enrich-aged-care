@@ -3,7 +3,9 @@ import { Newsreader, Public_Sans } from "next/font/google";
 import Link from "next/link";
 import Script from "next/script";
 
+import { CollectionIndicator } from "@/components/collection-indicator";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Toast } from "@/components/toast";
 import "./globals.css";
 
 const displayFont = Newsreader({
@@ -56,6 +58,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               </Link>
 
               <div className="site-header__actions">
+                <CollectionIndicator />
                 <nav className="site-nav" aria-label="Primary">
                   <Link href="/">Corpus</Link>
                   <Link href="/search">Search</Link>
@@ -67,6 +70,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
           <main>{children}</main>
         </div>
+        <Toast />
       </body>
     </html>
   );

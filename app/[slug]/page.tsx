@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { OnboardingHint } from "@/components/onboarding-hint";
+import { PinButton } from "@/components/pin-button";
 import { ReaderActiveRail } from "@/components/reader-active-rail";
 import { getVisibleSegmentIds } from "@/lib/reader";
 import { renderSegmentHtml } from "@/lib/render-segment-html";
@@ -145,6 +147,9 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
       <div className="reader-layout">
         <aside className="toc-rail">
           <p className="eyebrow">Table of contents</p>
+          <OnboardingHint id="toc-nav">
+            Click any heading to jump directly to that section.
+          </OnboardingHint>
           <nav aria-label={`${entry.title} table of contents`}>
             <ol className="toc-list">
               {bundle.toc.map((item) => (
@@ -184,6 +189,7 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
                 <div className="reader-segment__meta">
                   <span>{segment.type ?? "segment"}</span>
                   {segment.code ? <span>{segment.code}</span> : null}
+                  <PinButton instrumentSlug={slug} segmentId={segment.id} label={segment.label} />
                 </div>
 
                 <HeadingTag className={`reader-segment__heading reader-segment__heading--level-${Math.min(segment.level, 4)}`}>
@@ -228,7 +234,12 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
           })}
         </article>
 
-        <ReaderActiveRail panels={railPanels} />
+        <div>
+          <OnboardingHint id="margin-rail">
+            The margin panel shows defined terms, cross-references, and related provisions for the section you are reading. It updates as you scroll.
+          </OnboardingHint>
+          <ReaderActiveRail panels={railPanels} />
+        </div>
       </div>
     </div>
   );
