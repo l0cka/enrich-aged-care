@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Newsreader, Public_Sans } from "next/font/google";
 import Link from "next/link";
+import Script from "next/script";
 
+import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
 
 const displayFont = Newsreader({
@@ -21,10 +23,30 @@ export const metadata: Metadata = {
   title: "Enrich Aged Care",
 };
 
+const themeInitScript = `
+  (() => {
+    const storageKey = "enrich-aged-care-theme";
+    const root = document.documentElement;
+    const storedTheme = window.localStorage.getItem(storageKey);
+    const theme =
+      storedTheme === "dark" || storedTheme === "light"
+        ? storedTheme
+        : window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+
+    root.dataset.theme = theme;
+    root.style.colorScheme = theme;
+  })();
+`;
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`} suppressHydrationWarning>
       <body>
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         <div className="page-shell">
           <header className="site-header">
             <div className="site-header__inner">
@@ -33,10 +55,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <span className="site-brand__title">Enrich Aged Care</span>
               </Link>
 
-              <nav className="site-nav" aria-label="Primary">
-                <Link href="/">Corpus</Link>
-                <Link href="/search">Search</Link>
-              </nav>
+              <div className="site-header__actions">
+                <nav className="site-nav" aria-label="Primary">
+                  <Link href="/">Corpus</Link>
+                  <Link href="/search">Search</Link>
+                </nav>
+                <ThemeToggle />
+              </div>
             </div>
           </header>
 

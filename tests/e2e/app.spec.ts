@@ -13,6 +13,20 @@ test("landing page lists the three instruments", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("dark mode toggle applies site-wide and persists on reload", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+  await page.locator(".site-header").getByRole("link", { name: "Search", exact: true }).click();
+  await expect(page).toHaveURL(/\/search$/);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
 test("search returns a section result and links into the reader", async ({ page }) => {
   await page.goto("/search");
   await page.getByRole("searchbox").fill("Short title");
