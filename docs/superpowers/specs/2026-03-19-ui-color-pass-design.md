@@ -72,28 +72,31 @@ html {
 
 ### color-mix with white
 
-Throughout `globals.css`, many declarations use `color-mix(in oklab, <token> <pct>%, white)`. With the cool palette, these should use `transparent` instead of `white` to avoid washing out the neutral tones. Affected rules:
+Throughout `globals.css`, many declarations use `color-mix(in oklab, <token> <pct>%, white)`. With the cool palette, these should use `transparent` instead of `white` to avoid washing out the neutral tones. Rules using `linear-gradient` with `color-mix(...white)` keep their gradients but switch to `transparent`. Affected rules:
 
 - `.site-header` background
-- Shared panel rule (`.hero-panel`, `.instrument-card`, `.reader-surface`, etc.) background and border
-- `.theme-toggle` and children
-- `.hero-panel__meta div` background and border
+- Shared panel rule (`.hero-panel`, `.instrument-card`, `.reader-surface`, `.margin-rail`, `.toc-rail`, `.empty-state`, etc.) background and border
+- `.theme-toggle` and children (including `.theme-toggle__track`, `.theme-toggle__thumb`)
+- `.hero-panel__meta div` background and border (keeps `linear-gradient`, uses `transparent`)
 - `.search-form__query input` and `.search-form__filters select` borders
 - `.button--secondary` border and background
 - `.chip` background
+- `.status-pill` background
 - `.segment-term-list .term-disclosure` background
-- `.reader-surface` background
+- `.reader-surface` gap-background
 - `.reader-segment--scope` background
 - `.reader-segment--annotation` etc. backgrounds
 - `.reader-table-wrap` border and background
 - `.reader-table thead th` background
+- `.reader-table th, .reader-table td` border-top
 - `.reader-table tbody tr:nth-child(even)` background
-- `.margin-rail__heading` background and border
+- `.reader-block--note` border-left
+- `.margin-rail__heading` background and border (keeps `linear-gradient`, uses `transparent`)
 - `.margin-rail__section` (no change needed — uses tokens directly)
 - `.stack-list li` border
 - `.toc-list__item a:hover` background
 - `.onboarding-hint` background and border
-- `.onboarding-hint__dismiss` border and hover background
+- `.onboarding-hint__dismiss` hover background
 - `.feature-card` border
 
 ### Primary Button
