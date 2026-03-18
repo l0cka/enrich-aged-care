@@ -62,6 +62,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <nav className="site-nav" aria-label="Primary">
                   <Link href="/">Corpus</Link>
                   <Link href="/search">Search</Link>
+                  <Link href="/maps">Maps</Link>
                 </nav>
                 <ThemeToggle />
               </div>
