@@ -1,0 +1,24 @@
+{
+  "id": "provider-registration",
+  "title": "Provider Registration",
+  "description": "Provisions governing application, assessment, conditions, and refusal of provider registration under the Aged Care Act 2024.",
+  "builtIn": true,
+  "sections": [
+    {
+      "heading": "Application for Registration",
+      "provisions": []
+    },
+    {
+      "heading": "Assessment and Decision",
+      "provisions": []
+    },
+    {
+      "heading": "Conditions of Registration",
+      "provisions": []
+    },
+    {
+      "heading": "Refusal and Revocation",
+      "provisions": []
+    }
+  ]
+}

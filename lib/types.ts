@@ -190,3 +190,29 @@ export type Pathway = {
   truncated: boolean;
   totalCount: number;
 };
+
+// ── Decision Pathway Maps ───────────────────────────────────────
+
+export type MapProvision = {
+  instrumentSlug: string;
+  segmentId: string;
+  annotation?: string;
+};
+
+export type MapSection = {
+  heading: string;
+  provisions: MapProvision[];
+};
+
+export type PathwayMap = {
+  id: string;
+  title: string;
+  description: string;
+  builtIn: boolean;
+  sections: MapSection[];
+};
+
+export type UserMapsStore = {
+  version: 1;
+  maps: PathwayMap[];
+};
