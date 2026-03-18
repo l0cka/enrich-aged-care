@@ -159,3 +159,34 @@ export type CollectionStore = {
   version: 1;
   items: CollectionItem[];
 };
+
+// ── Provision Pathways ──────────────────────────────────────────
+
+export type PathwayRelationship =
+  | "delegates_to"
+  | "specified_by"
+  | "references"
+  | "referenced_by"
+  | "internal";
+
+export type PathwayNode = {
+  segmentId: string;
+  instrumentSlug: string;
+  label: string;
+  code: string | null;
+  text: string;
+};
+
+export type PathwayEdge = {
+  from: string;
+  to: string;
+  relationship: PathwayRelationship;
+};
+
+export type Pathway = {
+  seed: PathwayNode;
+  nodes: PathwayNode[];
+  edges: PathwayEdge[];
+  truncated: boolean;
+  totalCount: number;
+};
