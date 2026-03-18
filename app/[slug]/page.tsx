@@ -238,7 +238,7 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
           <OnboardingHint id="margin-rail">
             The margin panel shows defined terms, cross-references, and related provisions for the section you are reading. It updates as you scroll.
           </OnboardingHint>
-          <ReaderActiveRail panels={railPanels} />
+          <ReaderActiveRail panels={railPanels} instrumentSlug={slug} />
         </div>
       </div>
     </div>

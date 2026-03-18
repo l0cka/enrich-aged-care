@@ -36,9 +36,10 @@ type RailPanel = {
 
 type ReaderActiveRailProps = {
   panels: Record<string, RailPanel>;
+  instrumentSlug: string;
 };
 
-export function ReaderActiveRail({ panels }: ReaderActiveRailProps) {
+export function ReaderActiveRail({ panels, instrumentSlug }: ReaderActiveRailProps) {
   const orderedPanelIds = useMemo(() => Object.keys(panels), [panels]);
   const [activePanelId, setActivePanelId] = useState<string | null>(orderedPanelIds[0] ?? null);
 
@@ -218,6 +219,16 @@ export function ReaderActiveRail({ panels }: ReaderActiveRailProps) {
         ) : (
           <p className="muted">No linked provisions in the other corpus instruments.</p>
         )}
+      </section>
+
+      <section className="margin-rail__section">
+        <a
+          className="button button--secondary"
+          href={`/pathway/${instrumentSlug}/${activePanel.anchor}`}
+          style={{ fontSize: "0.8125rem" }}
+        >
+          Trace pathway →
+        </a>
       </section>
     </aside>
   );
