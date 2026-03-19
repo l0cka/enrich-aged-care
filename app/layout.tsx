@@ -63,6 +63,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   <Link href="/">Corpus</Link>
                   <Link href="/search">Search</Link>
                   <Link href="/graph">Structure</Link>
+                  <Link href="/compare">Compare</Link>
                 </nav>
                 <ThemeToggle />
               </div>

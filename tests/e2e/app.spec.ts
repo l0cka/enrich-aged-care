@@ -4,7 +4,7 @@ test("landing page lists the three instruments", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Browse the aged care corpus as a living, linked reading surface.",
+    "Aged care legislation",
   );
   await expect(page.getByRole("link", { name: "Aged Care Act 2024" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Aged Care Rules 2025" })).toBeVisible();

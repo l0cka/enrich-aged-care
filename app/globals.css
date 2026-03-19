@@ -2257,3 +2257,218 @@ button {
     min-width: 10rem;
   }
 }
+
+/* ── Compare page ─────────────────────────────────────────────── */
+
+.compare-page {
+  padding: clamp(1.5rem, 4vw, 2rem) clamp(1rem, 3vw, 2rem);
+  max-width: 100rem;
+  margin: 0 auto;
+}
+
+.compare-page__header {
+  margin-bottom: 1.5rem;
+}
+
+.compare-page__header h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0;
+}
+
+.compare-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.compare-pane {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.compare-pane__header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 3.5rem;
+  background: var(--color-bg);
+  z-index: 5;
+}
+
+.compare-pane__header h2 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.compare-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  margin-top: 0.5rem;
+  cursor: pointer;
+}
+
+.compare-filter input {
+  accent-color: var(--color-accent);
+}
+
+/* ── Left pane: section list ── */
+
+.compare-section-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: calc(100vh - 12rem);
+  overflow-y: auto;
+}
+
+.compare-section-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.compare-section-btn:hover {
+  background: var(--color-panel-strong);
+}
+
+.compare-section-btn--active {
+  background: color-mix(in oklab, var(--color-accent) 8%, transparent);
+  border-left: 3px solid var(--color-accent);
+}
+
+.compare-section-btn--linked .compare-section-btn__label {
+  font-weight: 600;
+}
+
+.compare-section-btn__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: white;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.compare-section-expanded {
+  padding: 0.75rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-panel);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.compare-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.compare-link {
+  font-size: 0.8125rem;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.compare-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Right pane: related provisions ── */
+
+.compare-empty {
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.compare-related-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: calc(100vh - 12rem);
+  overflow-y: auto;
+}
+
+.compare-related-item {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.compare-related-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.compare-related-item__label {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.compare-related-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.compare-related-item__trigger {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin: 0.25rem 0 0.5rem;
+  font-style: italic;
+}
+
+.compare-related-item__text {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.compare-related-item .reader-segment__body {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* ── Responsive: stack on mobile ── */
+
+@media (max-width: 760px) {
+  .compare-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-section-list,
+  .compare-related-list {
+    max-height: none;
+  }
+
+  .compare-pane__header {
+    position: static;
+  }
+}

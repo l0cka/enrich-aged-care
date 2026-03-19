@@ -29,6 +29,7 @@ export default async function HomePage() {
       <nav className="landing-shortcuts">
         <Link href="/search">Search across all instruments</Link>
         <Link href="/graph">Explore structure map</Link>
+        <Link href="/compare">Compare Act & Rules</Link>
       </nav>
     </div>
   );
