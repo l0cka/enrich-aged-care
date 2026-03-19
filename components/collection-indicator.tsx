@@ -1,17 +1,14 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 import { getCollectionCount, subscribeToCollection } from "@/lib/collection-store";
 
 import { CollectionDrawer } from "./collection-drawer";
 
 export function CollectionIndicator() {
-  const count = useSyncExternalStore(
-    subscribeToCollection,
-    () => getCollectionCount(),
-    () => 0,
-  );
+  const count = useSyncExternalStore(subscribeToCollection, getCollectionCount, () => 0);
 
   const [open, setOpen] = useState(false);
 
@@ -29,7 +26,12 @@ export function CollectionIndicator() {
       >
         Collection ({count})
       </button>
-      {open ? <CollectionDrawer onClose={() => setOpen(false)} /> : null}
+      {open
+        ? createPortal(
+            <CollectionDrawer onClose={() => setOpen(false)} />,
+            document.body,
+          )
+        : null}
     </>
   );
 }

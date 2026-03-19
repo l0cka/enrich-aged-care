@@ -98,6 +98,40 @@ function sortRelations(left: RelatedProvision, right: RelatedProvision): number 
   );
 }
 
+function isGenericLabel(label: string): boolean {
+  // Labels like "(1)", "(a)", "(i)" are not useful on their own
+  return /^\([0-9a-z]+\)$/i.test(label.trim()) || label === "(untitled)";
+}
+
+function resolveUsefulLabel(
+  segment: DerivedSegment,
+  bundle: EnrichedInstrumentBundle,
+): { label: string; anchor: string; id: string } {
+  // If the segment has a useful label, use it directly
+  if (!isGenericLabel(segment.label)) {
+    return { label: segment.label, anchor: segment.anchor, id: segment.id };
+  }
+
+  // Walk up to find a parent section with a meaningful label
+  let parentId = segment.parent;
+
+  while (parentId) {
+    const parent = bundle.segments[parentId];
+
+    if (!parent) break;
+
+    if (parent.type === "section" && !isGenericLabel(parent.label)) {
+      // Show parent label with the subsection code appended
+      const subCode = segment.code ? ` ${segment.code}` : "";
+      return { label: `${parent.label}${subCode}`, anchor: parent.anchor, id: parent.id };
+    }
+
+    parentId = parent.parent;
+  }
+
+  return { label: segment.label, anchor: segment.anchor, id: segment.id };
+}
+
 function makeDisplayRecord(
   relation: DirectRelation,
   relationKind: RelatedProvision["relationKind"],
@@ -106,6 +140,7 @@ function makeDisplayRecord(
 ): RelatedProvision {
   const otherBundle = currentIsSource ? relation.targetBundle : relation.sourceBundle;
   const otherSegment = currentIsSource ? relation.targetSegment : relation.sourceSegment;
+  const resolved = resolveUsefulLabel(otherSegment, otherBundle);
 
   return {
     id: slugify(
@@ -117,12 +152,12 @@ function makeDisplayRecord(
         viaLabel ?? "",
       ].join("-"),
     ),
-    otherAnchor: otherSegment.anchor,
+    otherAnchor: resolved.anchor,
     otherCode: otherSegment.code,
     otherInstrumentSlug: otherBundle.manifest.slug,
     otherInstrumentTitle: otherBundle.manifest.title,
-    otherLabel: otherSegment.label,
-    otherSegmentId: otherSegment.id,
+    otherLabel: resolved.label,
+    otherSegmentId: resolved.id,
     otherType: otherSegment.type,
     relationKind,
     triggerText: relation.matchText,

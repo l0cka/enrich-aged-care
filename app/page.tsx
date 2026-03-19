@@ -38,6 +38,39 @@ export default async function HomePage() {
         <CorpusSearchForm action="/search" className="hero-panel__search" facets={facets} submitLabel="Open search" />
       </section>
 
+      <section className="feature-cards">
+        <div className="feature-card">
+          <div className="feature-card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M3 4h14M3 8h10M3 12h12M3 16h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </div>
+          <h3>Read enriched legislation</h3>
+          <p>Structured segments with inline defined terms and cross-references you can expand in place.</p>
+        </div>
+        <div className="feature-card">
+          <div className="feature-card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="6" cy="10" r="3" stroke="currentColor" strokeWidth="1.8" />
+              <circle cx="14" cy="10" r="3" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M9 10h2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </div>
+          <h3>Explore connections</h3>
+          <p>See how provisions relate across the Act, Rules, and Transitional instruments in the margin panel.</p>
+        </div>
+        <div className="feature-card">
+          <div className="feature-card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M13 13l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </div>
+          <h3>Search with precision</h3>
+          <p>Filter by instrument, segment type, defined term, or cited document to find exactly what you need.</p>
+        </div>
+      </section>
+
       <section className="instrument-grid">
         {bundles.map((bundle) => (
           <article key={bundle.manifest.slug} className="instrument-card">

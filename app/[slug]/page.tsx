@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { OnboardingHint } from "@/components/onboarding-hint";
 import { PinButton } from "@/components/pin-button";
 import { ReaderActiveRail } from "@/components/reader-active-rail";
+import { ReaderTocRail } from "@/components/reader-toc-rail";
 import { getVisibleSegmentIds } from "@/lib/reader";
-import { renderSegmentHtml } from "@/lib/render-segment-html";
+import { renderSegmentHtml, type InlineLink } from "@/lib/render-segment-html";
 import { getGeneratedManifest, getInstrumentBundle } from "@/lib/server/data";
 import { getRelatedProvisionIndex } from "@/lib/server/related-provisions";
 
@@ -77,30 +77,80 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
   const showEndnotes = readParam(rawSearchParams.endnotes) === "1";
   const visibleSegmentIds = getVisibleSegmentIds(bundle, { showEndnotes, showFrontMatter });
   const visibleSegments = visibleSegmentIds.map((id) => bundle.segments[id]).filter(Boolean);
+
+  // Pre-compute entity lists per segment by checking mention span overlaps
+  const personsBySegment = new Map<string, { id: string; name: string; role: string }[]>();
+  const extDocsBySegment = new Map<string, { id: string; name: string; jurisdiction: string }[]>();
+
+  if (bundle.personLookup) {
+    for (const person of Object.values(bundle.personLookup)) {
+      for (const mention of person.mentions) {
+        for (const seg of visibleSegments) {
+          if (mention.start >= seg.span.start && mention.end <= seg.span.end) {
+            const list = personsBySegment.get(seg.id) ?? [];
+            if (!list.some((p) => p.id === person.id)) {
+              list.push({ id: person.id, name: person.name, role: person.role });
+              personsBySegment.set(seg.id, list);
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (bundle.externalDocumentLookup) {
+    for (const doc of Object.values(bundle.externalDocumentLookup)) {
+      for (const mention of doc.mentions) {
+        for (const seg of visibleSegments) {
+          if (mention.start >= seg.span.start && mention.end <= seg.span.end) {
+            const list = extDocsBySegment.get(seg.id) ?? [];
+            if (!list.some((d) => d.id === doc.id)) {
+              list.push({ id: doc.id, name: doc.name, jurisdiction: doc.jurisdiction });
+              extDocsBySegment.set(seg.id, list);
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+
   const railPanels = Object.fromEntries(
     visibleSegments.map((segment) => [
       segment.id,
       {
         anchor: segment.anchor,
         citations: segment.citationIds.map((id) => bundle.citationLookup[id]).filter(Boolean),
-        crossreferences: segment.crossreferenceIds
-          .map((id) => bundle.crossreferenceLookup[id])
-          .filter(Boolean)
-          .map((crossreference) => ({
-            href: crossreference.targetSegmentId
-              ? `#${bundle.segments[crossreference.targetSegmentId]?.anchor ?? ""}`
-              : crossreference.targetInstrumentSlug
-                ? `/${crossreference.targetInstrumentSlug}`
-                : null,
-            id: crossreference.id,
-            label: crossreference.label,
-            resolution: crossreference.resolution,
-            targetLabel: crossreference.targetLabel,
-          })),
+        crossreferences: (() => {
+          const seen = new Set<string>();
+          return segment.crossreferenceIds
+            .map((id) => bundle.crossreferenceLookup[id])
+            .filter(Boolean)
+            .filter((xref) => {
+              const key = xref.targetSegmentId ?? xref.id;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
+            .map((crossreference) => ({
+              href: crossreference.targetSegmentId
+                ? `#${bundle.segments[crossreference.targetSegmentId]?.anchor ?? ""}`
+                : crossreference.targetInstrumentSlug
+                  ? `/${crossreference.targetInstrumentSlug}`
+                  : null,
+              id: crossreference.id,
+              label: crossreference.label,
+              resolution: crossreference.resolution,
+              targetLabel: crossreference.targetLabel,
+            }));
+        })(),
         id: segment.id,
         label: segment.label,
         relatedProvisions: relatedProvisionIndex[`${slug}:${segment.id}`] ?? [],
         terms: segment.termIds.map((id) => bundle.termLookup[id]).filter(Boolean),
+        persons: personsBySegment.get(segment.id) ?? [],
+        externalDocuments: extDocsBySegment.get(segment.id) ?? [],
       },
     ]),
   );
@@ -144,24 +194,10 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
         </div>
       </header>
 
-      <div className="reader-layout">
-        <aside className="toc-rail">
-          <p className="eyebrow">Table of contents</p>
-          <OnboardingHint id="toc-nav">
-            Click any heading to jump directly to that section.
-          </OnboardingHint>
-          <nav aria-label={`${entry.title} table of contents`}>
-            <ol className="toc-list">
-              {bundle.toc.map((item) => (
-                <li key={item.id} className={`toc-list__item toc-list__item--level-${Math.min(item.level, 4)}`}>
-                  <a href={`#${item.anchor}`}>{item.label}</a>
-                </li>
-              ))}
-            </ol>
-          </nav>
-        </aside>
+      <div className="reader-layout" suppressHydrationWarning>
+        <ReaderTocRail instrumentTitle={entry.title} items={bundle.toc} />
 
-        <article className="reader-surface">
+        <article className="reader-surface" suppressHydrationWarning>
           {visibleSegments.map((segment) => {
             const HeadingTag = (segment.level <= 0
               ? "h2"
@@ -173,11 +209,53 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
                     ? "h5"
                     : "h6") as "h2" | "h3" | "h4" | "h5" | "h6";
 
+            const seenTargets = new Set<string>();
             const internalCrossreferences = segment.crossreferenceIds
               .map((id) => bundle.crossreferenceLookup[id])
-              .filter((crossreference) => crossreference?.targetSegmentId)
+              .filter((crossreference) => {
+                if (!crossreference?.targetSegmentId) return false;
+                if (seenTargets.has(crossreference.targetSegmentId)) return false;
+                seenTargets.add(crossreference.targetSegmentId);
+                return true;
+              })
               .slice(0, 8);
             const inlineTerms = segment.termIds.map((id) => bundle.termLookup[id]).filter(Boolean).slice(0, 8);
+
+            // sourceSpan offsets are relative to the full instrument text.
+            // segment.text is the body only (heading stripped), so find where
+            // the body starts in the full text to compute the correct offset.
+            const bodyOffset = segment.text.length > 0
+              ? bundle.text.indexOf(segment.text.slice(0, 40), segment.span.start)
+              : -1;
+            const inlineLinks: InlineLink[] = [];
+
+            if (bodyOffset >= 0) {
+              for (const id of segment.crossreferenceIds) {
+                const xref = bundle.crossreferenceLookup[id];
+
+                if (!xref?.targetSegmentId || xref.resolution === "external" || xref.resolution === "unresolved") {
+                  continue;
+                }
+
+                const targetAnchor = bundle.segments[xref.targetSegmentId]?.anchor;
+
+                if (!targetAnchor) {
+                  continue;
+                }
+
+                const href =
+                  xref.targetInstrumentSlug === slug || !xref.targetInstrumentSlug
+                    ? `#${targetAnchor}`
+                    : `/${xref.targetInstrumentSlug}#${targetAnchor}`;
+
+                const localStart = xref.sourceSpan.start - bodyOffset;
+                const localEnd = xref.sourceSpan.end - bodyOffset;
+
+                if (localStart >= 0 && localEnd <= segment.text.length) {
+                  inlineLinks.push({ start: localStart, end: localEnd, href });
+                }
+              }
+            }
 
             return (
               <section
@@ -187,7 +265,7 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
                 id={segment.anchor}
               >
                 <div className="reader-segment__meta">
-                  <span>{segment.type ?? "segment"}</span>
+                  <span>{segment.type ?? (segment.kind === "container" ? "heading" : "provision")}</span>
                   {segment.code ? <span>{segment.code}</span> : null}
                   <PinButton instrumentSlug={slug} segmentId={segment.id} label={segment.label} />
                 </div>
@@ -224,7 +302,7 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
                 {segment.text.trim() ? (
                   <div
                     className="reader-segment__body"
-                    dangerouslySetInnerHTML={{ __html: renderSegmentHtml(segment.text) }}
+                    dangerouslySetInnerHTML={{ __html: renderSegmentHtml(segment.text, inlineLinks) }}
                   />
                 ) : (
                   <p className="muted">No body text for this structural segment.</p>
@@ -234,12 +312,7 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
           })}
         </article>
 
-        <div>
-          <OnboardingHint id="margin-rail">
-            The margin panel shows defined terms, cross-references, and related provisions for the section you are reading. It updates as you scroll.
-          </OnboardingHint>
-          <ReaderActiveRail panels={railPanels} instrumentSlug={slug} />
-        </div>
+        <ReaderActiveRail panels={railPanels} instrumentSlug={slug} />
       </div>
     </div>
   );

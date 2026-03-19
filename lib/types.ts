@@ -129,6 +129,22 @@ export type RelatedProvision = {
   viaLabel: string | null;
 };
 
+export type PersonRecord = {
+  id: string;
+  name: string;
+  type: "natural" | "politic";
+  role: string;
+  mentions: Span[];
+};
+
+export type ExternalDocumentRecord = {
+  id: string;
+  name: string;
+  type: string;
+  jurisdiction: string;
+  mentions: Span[];
+};
+
 export type EnrichedInstrumentBundle = {
   manifest: InstrumentManifestEntry;
   generatedAt: string;
@@ -144,6 +160,8 @@ export type EnrichedInstrumentBundle = {
   searchRecords: SearchRecord[];
   frontMatterIds: string[];
   endnoteIds: string[];
+  personLookup?: Record<string, PersonRecord>;
+  externalDocumentLookup?: Record<string, ExternalDocumentRecord>;
 };
 
 // ── Citation Clipboard ──────────────────────────────────────────

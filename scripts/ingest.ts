@@ -7,6 +7,7 @@ import { instrumentManifest } from "@/lib/instruments";
 import { extractDocxText } from "@/lib/ingest/docx";
 import { buildFallbackBundle } from "@/lib/ingest/fallback";
 import { enrichWithIsaacus } from "@/lib/ingest/isaacus";
+import { buildKanonBundle } from "@/lib/ingest/kanon";
 import type { EnrichedInstrumentBundle } from "@/lib/types";
 
 const outputDir = path.join(process.cwd(), "generated-data");
@@ -23,11 +24,9 @@ async function main() {
     const fallbackBundle = buildFallbackBundle(entry, text, instrumentManifest);
     const ilgsDocument = await enrichWithIsaacus(text);
 
-    const bundle: EnrichedInstrumentBundle = {
-      ...fallbackBundle,
-      ilgsDocument,
-      sourceMode: ilgsDocument ? "isaacus" : "fallback",
-    };
+    const bundle: EnrichedInstrumentBundle = ilgsDocument
+      ? buildKanonBundle(entry, text, ilgsDocument, instrumentManifest)
+      : fallbackBundle;
 
     bundles.push(bundle);
     await writeFile(path.join(outputDir, `${entry.slug}.json`), JSON.stringify(bundle, null, 2));

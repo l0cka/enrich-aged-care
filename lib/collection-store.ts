@@ -4,34 +4,74 @@ const storageKey = "enrich:collection";
 const changeEvent = "enrich-aged-care-collectionchange";
 const currentVersion = 1;
 const maxItems = 50;
+const emptyItems: CollectionItem[] = [];
+const emptyCollectionStore: CollectionStore = { version: currentVersion, items: emptyItems };
 
-function emptyStore(): CollectionStore {
-  return { version: currentVersion, items: [] };
-}
+// ── Snapshot cache ───────────────────────────────────────────
+// useSyncExternalStore requires getSnapshot to return a referentially
+// stable value when the underlying data hasn't changed. We cache the
+// last-read raw JSON string and the derived snapshots so repeated
+// calls return the same objects.
+
+let cachedRaw: string | null | undefined;
+let cachedStore: CollectionStore = emptyCollectionStore;
+let cachedItems: CollectionItem[] = emptyItems;
+let cachedCount: number = 0;
 
 function readStore(): CollectionStore {
+  if (typeof window === "undefined") {
+    return emptyCollectionStore;
+  }
+
   try {
     const raw = window.localStorage.getItem(storageKey);
 
+    // Same raw string → return cached store (same reference)
+    if (raw === cachedRaw) {
+      return cachedStore;
+    }
+
+    cachedRaw = raw;
+
     if (!raw) {
-      return emptyStore();
+      cachedStore = emptyCollectionStore;
+      cachedItems = emptyItems;
+      cachedCount = 0;
+      return cachedStore;
     }
 
     const parsed = JSON.parse(raw) as CollectionStore;
 
     if (parsed.version !== currentVersion) {
-      return emptyStore();
+      cachedStore = emptyCollectionStore;
+      cachedItems = emptyItems;
+      cachedCount = 0;
+      return cachedStore;
     }
 
-    return parsed;
+    cachedStore = parsed;
+    cachedItems = parsed.items;
+    cachedCount = parsed.items.length;
+    return cachedStore;
   } catch {
-    return emptyStore();
+    cachedRaw = null;
+    cachedStore = emptyCollectionStore;
+    cachedItems = emptyItems;
+    cachedCount = 0;
+    return cachedStore;
   }
 }
 
 function writeStore(store: CollectionStore): void {
+  const raw = JSON.stringify(store);
+
+  cachedRaw = raw;
+  cachedStore = store;
+  cachedItems = store.items;
+  cachedCount = store.items.length;
+
   try {
-    window.localStorage.setItem(storageKey, JSON.stringify(store));
+    window.localStorage.setItem(storageKey, raw);
   } catch {
     /* storage unavailable */
   }
@@ -40,11 +80,17 @@ function writeStore(store: CollectionStore): void {
 }
 
 export function getCollectionItems(): CollectionItem[] {
-  return readStore().items;
+  readStore();
+  return cachedItems;
+}
+
+export function getEmptyCollectionItems(): CollectionItem[] {
+  return emptyItems;
 }
 
 export function getCollectionCount(): number {
-  return readStore().items.length;
+  readStore();
+  return cachedCount;
 }
 
 export function isInCollection(instrumentSlug: string, segmentId: string): boolean {
@@ -64,33 +110,48 @@ export function addToCollection(instrumentSlug: string, segmentId: string): void
     return;
   }
 
-  store.items.push({
-    segmentId,
-    instrumentSlug,
-    note: "",
-    addedAt: Date.now(),
+  writeStore({
+    version: currentVersion,
+    items: [
+      ...store.items,
+      {
+        segmentId,
+        instrumentSlug,
+        note: "",
+        addedAt: Date.now(),
+      },
+    ],
   });
-
-  writeStore(store);
 }
 
 export function removeFromCollection(instrumentSlug: string, segmentId: string): void {
   const store = readStore();
-  store.items = store.items.filter(
-    (item) => !(item.instrumentSlug === instrumentSlug && item.segmentId === segmentId),
-  );
-  writeStore(store);
+  writeStore({
+    version: currentVersion,
+    items: store.items.filter(
+      (item) => !(item.instrumentSlug === instrumentSlug && item.segmentId === segmentId),
+    ),
+  });
 }
 
 export function updateNote(instrumentSlug: string, segmentId: string, note: string): void {
   const store = readStore();
-  const found = store.items.find(
-    (item) => item.instrumentSlug === instrumentSlug && item.segmentId === segmentId,
-  );
+  let changed = false;
+  const nextItems = store.items.map((item) => {
+    if (item.instrumentSlug !== instrumentSlug || item.segmentId !== segmentId) {
+      return item;
+    }
 
-  if (found) {
-    found.note = note;
-    writeStore(store);
+    if (item.note === note) {
+      return item;
+    }
+
+    changed = true;
+    return { ...item, note };
+  });
+
+  if (changed) {
+    writeStore({ version: currentVersion, items: nextItems });
   }
 }
 
@@ -101,34 +162,36 @@ export function moveItem(fromIndex: number, toIndex: number): void {
     return;
   }
 
-  const [item] = store.items.splice(fromIndex, 1);
-  store.items.splice(toIndex, 0, item);
-  writeStore(store);
+  const nextItems = [...store.items];
+  const [item] = nextItems.splice(fromIndex, 1);
+  nextItems.splice(toIndex, 0, item);
+  writeStore({ version: currentVersion, items: nextItems });
 }
 
 export function clearCollection(): void {
-  writeStore(emptyStore());
+  writeStore({ version: currentVersion, items: [] });
 }
 
 export function addBulk(items: { instrumentSlug: string; segmentId: string }[]): number {
   const store = readStore();
+  const nextItems = [...store.items];
   let added = 0;
 
   for (const { instrumentSlug, segmentId } of items) {
-    if (store.items.length >= maxItems) {
+    if (nextItems.length >= maxItems) {
       break;
     }
 
-    if (store.items.some((existing) => existing.instrumentSlug === instrumentSlug && existing.segmentId === segmentId)) {
+    if (nextItems.some((existing) => existing.instrumentSlug === instrumentSlug && existing.segmentId === segmentId)) {
       continue;
     }
 
-    store.items.push({ segmentId, instrumentSlug, note: "", addedAt: Date.now() });
+    nextItems.push({ segmentId, instrumentSlug, note: "", addedAt: Date.now() });
     added++;
   }
 
   if (added > 0) {
-    writeStore(store);
+    writeStore({ version: currentVersion, items: nextItems });
   }
 
   return added;

@@ -1,3 +1,11 @@
+export type InlineLink = {
+  start: number;
+  end: number;
+  href: string;
+};
+
+// ── HTML helpers ─────────────────────────────────────────────────
+
 function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -13,16 +21,16 @@ function normalizeTableHeader(value: string): string {
 function splitBlocks(bodyText: string): string[] {
   return bodyText
     .split(/\n{2,}/)
-    .map((block) => block.trim())
+    .map((block) => block.replace(/\s+$/, "")) // trim trailing only, keep leading tabs
     .filter(Boolean);
 }
 
 function isColumnHeaderBlock(block: string): boolean {
-  return /^Column\s*\d+/i.test(block);
+  return /^\s*Column\s*\d+/i.test(block);
 }
 
 function isTableLeadBlock(block: string): boolean {
-  return /^Item$/i.test(block) || isColumnHeaderBlock(block);
+  return /^\s*Item\s*$/i.test(block) || isColumnHeaderBlock(block);
 }
 
 function looksLikeItemCell(value: string): boolean {
@@ -41,15 +49,63 @@ function looksLikeTableRow(cells: string[], headers: string[]): boolean {
   return true;
 }
 
-function renderParagraph(block: string): string {
-  const className =
-    /^Note:/i.test(block) || /^Example:/i.test(block)
-      ? "reader-block reader-block--note"
-      : /^[([a-z0-9]+[)\].]/i.test(block)
-        ? "reader-block reader-block--item"
-        : "reader-block";
+function countLeadingTabs(text: string): number {
+  let count = 0;
 
-  return `<p class="${className}">${renderInlineHtml(block)}</p>`;
+  for (const char of text) {
+    if (char === "\t") {
+      count++;
+    } else {
+      break;
+    }
+  }
+
+  return count;
+}
+
+function renderParagraph(block: string): string {
+  // Count leading tabs for indentation level
+  const tabs = countLeadingTabs(block);
+  const trimmed = block.replace(/^\t+/, "");
+
+  // Detect legislative paragraph labels: (1), (a), (i), (iv), etc.
+  const labelMatch = trimmed.match(/^(\([a-z0-9]+\)|\([ivxlcdm]+\))\t+/i);
+
+  if (labelMatch) {
+    const label = escapeHtml(labelMatch[1]);
+    const body = trimmed.slice(labelMatch[0].length);
+
+    // Infer indent from the label pattern (more reliable than tab count)
+    let indent: number;
+    const rawLabel = labelMatch[1];
+
+    if (/^\(\d+\)$/.test(rawLabel)) {
+      indent = 1; // subsection: (1), (2)
+    } else if (/^\([ivxlc]{2,}\)$/i.test(rawLabel)) {
+      indent = 3; // multi-char roman numeral: (ii), (iv), (xi)
+    } else if (/^\([a-hj-uw-z]\)$/i.test(rawLabel)) {
+      indent = 2; // letter paragraph: (a)-(h), (j)-(u), (w)-(z) — excludes i,v,x
+    } else if (/^\([ivx]\)$/i.test(rawLabel)) {
+      indent = 3; // single roman numeral: (i), (v), (x)
+    } else if (/^\([a-z]\)$/i.test(rawLabel)) {
+      indent = 2; // fallback letter
+    } else {
+      indent = Math.max(1, Math.min(tabs, 4));
+    }
+
+    return `<div class="reader-block reader-block--provision reader-block--indent-${indent}"><span class="reader-block__label">${label}</span><span class="reader-block__text">${renderInlineHtml(body)}</span></div>`;
+  }
+
+  // Note blocks
+  if (/^Note\s*\d*:/i.test(trimmed) || /^Example:/i.test(trimmed)) {
+    return `<p class="reader-block reader-block--note">${renderInlineHtml(trimmed)}</p>`;
+  }
+
+  // Regular paragraph with indentation
+  const indent = Math.min(tabs, 4);
+  const indentClass = indent > 0 ? ` reader-block--indent-${indent}` : "";
+
+  return `<p class="reader-block${indentClass}">${renderInlineHtml(trimmed)}</p>`;
 }
 
 function consumeTable(blocks: string[], startIndex: number): { html: string; nextIndex: number } | null {
@@ -118,7 +174,9 @@ function consumeTable(blocks: string[], startIndex: number): { html: string; nex
   };
 }
 
-export function renderSegmentHtml(bodyText: string): string {
+// ── Main export ──────────────────────────────────────────────────
+
+export function renderSegmentHtml(bodyText: string, links?: InlineLink[]): string {
   const blocks = splitBlocks(bodyText);
   const parts: string[] = [];
 
@@ -135,5 +193,30 @@ export function renderSegmentHtml(bodyText: string): string {
     index += 1;
   }
 
-  return parts.join("");
+  let html = parts.join("");
+
+  // Post-render pass: inject inline cross-reference links by finding
+  // the escaped reference text in the rendered HTML and wrapping it.
+  if (links?.length) {
+    // Sort by text length descending to avoid partial replacements
+    const sorted = [...links].sort((a, b) => (b.end - b.start) - (a.end - a.start));
+
+    for (const link of sorted) {
+      const rawText = bodyText.slice(link.start, link.end);
+
+      if (!rawText) continue;
+
+      // Escape the text the same way renderInlineHtml does
+      const escapedText = escapeHtml(rawText).replace(/\t/g, "    ").replace(/\n/g, "<br />");
+
+      // Only replace the first occurrence that isn't already inside a tag
+      const escapedForRegex = escapedText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = new RegExp(`(?<![">])${escapedForRegex}(?![^<]*>)`, "");
+      const replacement = `<a href="${escapeHtml(link.href)}" class="inline-xref">${escapedText}</a>`;
+
+      html = html.replace(pattern, replacement);
+    }
+  }
+
+  return html;
 }

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { formatCitation, formatCitationsOnly, formatCollectionExport } from "@/lib/citation";
 import {
   clearCollection,
+  getEmptyCollectionItems,
   getCollectionItems,
   moveItem,
   removeFromCollection,
@@ -30,15 +31,15 @@ type ResolvedItem = {
 
 export function CollectionDrawer({ onClose }: CollectionDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
-  const items = useSyncExternalStore(subscribeToCollection, getCollectionItems, () => []);
+  const items = useSyncExternalStore(subscribeToCollection, getCollectionItems, getEmptyCollectionItems);
   const [resolvedItems, setResolvedItems] = useState<ResolvedItem[]>([]);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [fallbackText, setFallbackText] = useState<string | null>(null);
+  const visibleResolvedItems = items.length ? resolvedItems : [];
 
   // Resolve citations and excerpts from server data via API
   useEffect(() => {
     if (!items.length) {
-      setResolvedItems([]);
       return;
     }
 
@@ -99,7 +100,7 @@ export function CollectionDrawer({ onClose }: CollectionDrawerProps) {
   }, [onClose]);
 
   const handleCopyAll = async () => {
-    const exportItems = resolvedItems.map((item) => ({
+    const exportItems = visibleResolvedItems.map((item) => ({
       citation: item.citation,
       text: item.fullText,
     }));
@@ -114,7 +115,7 @@ export function CollectionDrawer({ onClose }: CollectionDrawerProps) {
   };
 
   const handleCopyCitations = async () => {
-    const text = formatCitationsOnly(resolvedItems.map((item) => item.citation));
+    const text = formatCitationsOnly(visibleResolvedItems.map((item) => item.citation));
 
     try {
       await navigator.clipboard.writeText(text);
@@ -152,11 +153,11 @@ export function CollectionDrawer({ onClose }: CollectionDrawerProps) {
         </div>
 
         <div className="drawer__body">
-          {resolvedItems.length === 0 ? (
+          {visibleResolvedItems.length === 0 ? (
             <p className="muted">Pin provisions from the reader or search results to build your collection.</p>
           ) : (
             <ol className="drawer__list">
-              {resolvedItems.map((item, index) => (
+              {visibleResolvedItems.map((item, index) => (
                 <li key={`${item.instrumentSlug}:${item.segmentId}`} className="drawer__item">
                   <div className="drawer__item-header">
                     <a
@@ -179,7 +180,7 @@ export function CollectionDrawer({ onClose }: CollectionDrawerProps) {
                       <button
                         aria-label="Move down"
                         className="drawer__move-button"
-                        disabled={index === resolvedItems.length - 1}
+                        disabled={index === visibleResolvedItems.length - 1}
                         onClick={() => moveItem(index, index + 1)}
                         type="button"
                       >
@@ -220,7 +221,7 @@ export function CollectionDrawer({ onClose }: CollectionDrawerProps) {
           ) : null}
         </div>
 
-        {resolvedItems.length > 0 ? (
+        {visibleResolvedItems.length > 0 ? (
           <div className="drawer__footer">
             <button className="button button--primary" onClick={handleCopyAll} type="button">
               Copy all

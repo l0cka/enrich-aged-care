@@ -24,6 +24,18 @@ type RailTerm = {
   label: string;
 };
 
+type RailPerson = {
+  id: string;
+  name: string;
+  role: string;
+};
+
+type RailExternalDocument = {
+  id: string;
+  name: string;
+  jurisdiction: string;
+};
+
 type RailPanel = {
   anchor: string;
   citations: RailCitation[];
@@ -32,6 +44,8 @@ type RailPanel = {
   label: string;
   relatedProvisions: RelatedProvision[];
   terms: RailTerm[];
+  persons?: RailPerson[];
+  externalDocuments?: RailExternalDocument[];
 };
 
 type ReaderActiveRailProps = {
@@ -73,6 +87,7 @@ export function ReaderActiveRail({ panels, instrumentSlug }: ReaderActiveRailPro
     }
 
     let frameId = 0;
+    let timeoutIds: number[] = [];
 
     const scheduleSync = () => {
       if (frameId) {
@@ -86,6 +101,9 @@ export function ReaderActiveRail({ panels, instrumentSlug }: ReaderActiveRailPro
     };
 
     const updateFromHash = () => {
+      timeoutIds.forEach((id) => window.clearTimeout(id));
+      timeoutIds = [];
+
       const hash = window.location.hash.slice(1);
 
       if (!hash) {
@@ -96,9 +114,26 @@ export function ReaderActiveRail({ panels, instrumentSlug }: ReaderActiveRailPro
       const match = orderedPanelIds.find((id) => panels[id]?.anchor === hash);
 
       if (match) {
-        window.requestAnimationFrame(() => {
+        let userHasScrolled = false;
+        const onUserScroll = () => { userHasScrolled = true; };
+        window.addEventListener("scroll", onUserScroll, { passive: true, once: true });
+
+        const runHashSync = () => {
+          if (userHasScrolled) {
+            // User started scrolling — stop fighting them
+            timeoutIds.forEach((id) => window.clearTimeout(id));
+            timeoutIds = [];
+            return;
+          }
+
+          document.getElementById(hash)?.scrollIntoView();
           setActivePanelId(match);
           scheduleSync();
+        };
+
+        // Try once immediately, then a few retries for slow renders
+        [0, 200, 800].forEach((delay) => {
+          timeoutIds.push(window.setTimeout(runHashSync, delay));
         });
       }
     };
@@ -113,6 +148,8 @@ export function ReaderActiveRail({ panels, instrumentSlug }: ReaderActiveRailPro
       if (frameId) {
         window.cancelAnimationFrame(frameId);
       }
+
+      timeoutIds.forEach((id) => window.clearTimeout(id));
 
       window.removeEventListener("scroll", scheduleSync);
       window.removeEventListener("resize", scheduleSync);
@@ -220,6 +257,34 @@ export function ReaderActiveRail({ panels, instrumentSlug }: ReaderActiveRailPro
           <p className="muted">No linked provisions in the other corpus instruments.</p>
         )}
       </section>
+
+      {activePanel.persons?.length ? (
+        <section className="margin-rail__section">
+          <h3>Key entities</h3>
+          <ul className="stack-list">
+            {activePanel.persons.map((person) => (
+              <li key={person.id}>
+                <span>{person.name}</span>
+                <p className="muted">{person.role.replace(/_/g, " ")}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {activePanel.externalDocuments?.length ? (
+        <section className="margin-rail__section">
+          <h3>External legislation</h3>
+          <ul className="stack-list">
+            {activePanel.externalDocuments.map((doc) => (
+              <li key={doc.id}>
+                <span>{doc.name}</span>
+                <p className="muted">{doc.jurisdiction}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="margin-rail__section">
         <a
