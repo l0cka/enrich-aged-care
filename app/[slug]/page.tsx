@@ -117,42 +117,45 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
   }
 
   const railPanels = Object.fromEntries(
-    visibleSegments.map((segment) => [
-      segment.id,
-      {
-        anchor: segment.anchor,
-        citations: segment.citationIds.map((id) => bundle.citationLookup[id]).filter(Boolean),
-        crossreferences: (() => {
-          const seen = new Set<string>();
-          return segment.crossreferenceIds
-            .map((id) => bundle.crossreferenceLookup[id])
-            .filter(Boolean)
-            .filter((xref) => {
-              const key = xref.targetSegmentId ?? xref.id;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            })
-            .map((crossreference) => ({
-              href: crossreference.targetSegmentId
-                ? `#${bundle.segments[crossreference.targetSegmentId]?.anchor ?? ""}`
-                : crossreference.targetInstrumentSlug
-                  ? `/${crossreference.targetInstrumentSlug}`
-                  : null,
-              id: crossreference.id,
-              label: crossreference.label,
-              resolution: crossreference.resolution,
-              targetLabel: crossreference.targetLabel,
-            }));
-        })(),
-        id: segment.id,
-        label: segment.label,
-        relatedProvisions: relatedProvisionIndex[`${slug}:${segment.id}`] ?? [],
-        terms: segment.termIds.map((id) => bundle.termLookup[id]).filter(Boolean),
-        persons: personsBySegment.get(segment.id) ?? [],
-        externalDocuments: extDocsBySegment.get(segment.id) ?? [],
-      },
-    ]),
+    visibleSegments.map((segment) => {
+      const seen = new Set<string>();
+      const crossreferences = segment.crossreferenceIds
+        .map((id) => bundle.crossreferenceLookup[id])
+        .filter(Boolean)
+        .filter((xref) => {
+          const key = xref.targetSegmentId ?? xref.id;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .slice(0, 12)
+        .map((crossreference) => ({
+          href: crossreference.targetSegmentId
+            ? `#${bundle.segments[crossreference.targetSegmentId]?.anchor ?? ""}`
+            : crossreference.targetInstrumentSlug
+              ? `/${crossreference.targetInstrumentSlug}`
+              : null,
+          id: crossreference.id,
+          label: crossreference.label,
+          resolution: crossreference.resolution,
+          targetLabel: crossreference.targetLabel,
+        }));
+
+      return [
+        segment.id,
+        {
+          anchor: segment.anchor,
+          citations: segment.citationIds.map((id) => bundle.citationLookup[id]).filter(Boolean).slice(0, 8),
+          crossreferences,
+          id: segment.id,
+          label: segment.label,
+          relatedProvisions: relatedProvisionIndex[`${slug}:${segment.id}`] ?? [],
+          terms: segment.termIds.map((id) => bundle.termLookup[id]).filter(Boolean).slice(0, 12),
+          persons: (personsBySegment.get(segment.id) ?? []).slice(0, 6),
+          externalDocuments: (extDocsBySegment.get(segment.id) ?? []).slice(0, 6),
+        },
+      ];
+    }),
   );
 
   return (

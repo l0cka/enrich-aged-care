@@ -137,7 +137,7 @@ export function ProvisionGraph({ data }: ProvisionGraphProps) {
 
     let animationId = 0;
     let tickCount = 0;
-    const maxTicks = 200;
+    const maxTicks = 80;
 
     function resize() {
       const rect = container!.getBoundingClientRect();
@@ -174,7 +174,7 @@ export function ProvisionGraph({ data }: ProvisionGraphProps) {
             if (distSq > 400000) continue;
 
             const dist = Math.sqrt(distSq) || 1;
-            const force = (alpha * 600) / (dist * dist);
+            const force = (alpha * 300) / (dist * dist);
             const fx = (dx / dist) * force;
             const fy = (dy / dist) * force;
             nodes[i].vx -= fx;
@@ -222,8 +222,8 @@ export function ProvisionGraph({ data }: ProvisionGraphProps) {
 
         // Apply velocity
         for (const node of nodes) {
-          node.vx *= 0.4;
-          node.vy *= 0.4;
+          node.vx *= 0.25;
+          node.vy *= 0.25;
           node.x += node.vx;
           node.y += node.vy;
         }

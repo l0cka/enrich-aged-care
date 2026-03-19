@@ -36,6 +36,9 @@ export const getInstrumentBundle = cache(async (slug: string): Promise<EnrichedI
   return {
     ...bundle,
     manifest: mergeManifestEntry(bundle.manifest),
+    // Strip the raw Kanon document — it's 2-3 MB per instrument and only
+    // needed during ingestion, not at runtime.
+    ilgsDocument: null,
   };
 });
 
