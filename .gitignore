@@ -6,3 +6,7 @@ playwright-report
 test-results
 
 .superpowers/
+
+# Large generated files (regenerable via npm run ingest)
+generated-data/embeddings.json
+generated-data/similarity.json
