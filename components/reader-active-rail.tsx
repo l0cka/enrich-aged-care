@@ -166,10 +166,8 @@ export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: R
   }
 
   return (
-    <aside className="margin-rail" aria-labelledby="margin-intelligence-title">
+    <aside className="margin-rail" aria-labelledby="margin-intelligence-title" tabIndex={0}>
       <div className="margin-rail__heading">
-        <p className="eyebrow">Margin intelligence</p>
-        <p className="margin-rail__tracking-label">Currently showing for</p>
         <h2 id="margin-intelligence-title">
           <a className="margin-rail__tracking-link" href={`#${activePanel.anchor}`}>
             {activePanel.label}
@@ -177,9 +175,9 @@ export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: R
         </h2>
       </div>
 
-      <section className="margin-rail__section">
-        <h3>Defined terms</h3>
-        {activePanel.terms.length ? (
+      {activePanel.terms.length ? (
+        <section className="margin-rail__section">
+          <h3>Defined terms</h3>
           <ul className="stack-list">
             {activePanel.terms.map((term) => (
               <li key={term.id}>
@@ -190,14 +188,12 @@ export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: R
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="muted">No tracked defined terms in this segment.</p>
-        )}
-      </section>
+        </section>
+      ) : null}
 
-      <section className="margin-rail__section">
-        <h3>Crossreferences</h3>
-        {activePanel.crossreferences.length ? (
+      {activePanel.crossreferences.length ? (
+        <section className="margin-rail__section">
+          <h3>Crossreferences</h3>
           <ul className="stack-list">
             {activePanel.crossreferences.map((crossreference) => (
               <li key={crossreference.id}>
@@ -212,14 +208,12 @@ export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: R
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="muted">No parsed crossreferences in this segment.</p>
-        )}
-      </section>
+        </section>
+      ) : null}
 
-      <section className="margin-rail__section">
-        <h3>Cited documents</h3>
-        {activePanel.citations.length ? (
+      {activePanel.citations.length ? (
+        <section className="margin-rail__section">
+          <h3>Cited documents</h3>
           <ul className="stack-list">
             {activePanel.citations.map((citation) => (
               <li key={citation.id}>
@@ -231,14 +225,12 @@ export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: R
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="muted">No tracked cited documents in this segment.</p>
-        )}
-      </section>
+        </section>
+      ) : null}
 
-      <section className="margin-rail__section">
-        <h3>Other instruments</h3>
-        {activePanel.relatedProvisions.length ? (
+      {activePanel.relatedProvisions.length ? (
+        <section className="margin-rail__section">
+          <h3>Other instruments</h3>
           <ul className="stack-list">
             {activePanel.relatedProvisions.map((provision) => (
               <li key={provision.id}>
@@ -255,10 +247,8 @@ export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: R
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="muted">No linked provisions in the other corpus instruments.</p>
-        )}
-      </section>
+        </section>
+      ) : null}
 
       {activePanel.persons?.length ? (
         <section className="margin-rail__section">

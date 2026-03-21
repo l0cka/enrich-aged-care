@@ -123,7 +123,7 @@ export function ReaderTocRail({ instrumentTitle, items }: ReaderTocRailProps) {
   const activeItem = items.find((item) => item.anchor === activeAnchor) ?? items[0] ?? null;
 
   return (
-    <aside className="toc-rail" aria-labelledby="toc-title">
+    <aside className="toc-rail" aria-labelledby="toc-title" tabIndex={0}>
       <div className="toc-rail__header">
         <p className="eyebrow">Table of contents</p>
         {activeItem ? (

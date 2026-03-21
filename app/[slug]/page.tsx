@@ -178,32 +178,32 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
         </div>
 
         <div className="reader-hero__controls">
-          <span className="status-pill">
-            {bundle.sourceMode === "isaacus" ? "Isaacus corpus" : "Fallback corpus until API key is supplied"}
-          </span>
-          <div className="button-row">
-            <a
-              className="button button--secondary"
-              href={buildReaderHref(slug, currentSearchParams, {
-                endnotes: showEndnotes,
-                frontMatter: !showFrontMatter,
-              })}
-            >
-              {showFrontMatter ? "Hide front matter" : "Show front matter"}
-            </a>
-            <a
-              className="button button--secondary"
-              href={buildReaderHref(slug, currentSearchParams, {
-                endnotes: !showEndnotes,
-                frontMatter: showFrontMatter,
-              })}
-            >
-              {showEndnotes ? "Hide endnotes" : "Show endnotes"}
-            </a>
-            <Link className="button button--primary" href={`/search?instrument=${slug}`}>
-              Search this instrument
-            </Link>
-          </div>
+          <Link className="button button--primary" href={`/search?instrument=${slug}`}>
+            Search this instrument
+          </Link>
+          <details className="reader-hero__options">
+            <summary>Sections</summary>
+            <div className="button-row">
+              <a
+                className="button button--secondary"
+                href={buildReaderHref(slug, currentSearchParams, {
+                  endnotes: showEndnotes,
+                  frontMatter: !showFrontMatter,
+                })}
+              >
+                {showFrontMatter ? "Hide front matter" : "Show front matter"}
+              </a>
+              <a
+                className="button button--secondary"
+                href={buildReaderHref(slug, currentSearchParams, {
+                  endnotes: !showEndnotes,
+                  frontMatter: showFrontMatter,
+                })}
+              >
+                {showEndnotes ? "Hide endnotes" : "Show endnotes"}
+              </a>
+            </div>
+          </details>
         </div>
       </header>
 
@@ -278,7 +278,6 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
                 id={segment.anchor}
               >
                 <div className="reader-segment__meta">
-                  <span>{segment.type ?? (segment.kind === "container" ? "heading" : "provision")}</span>
                   {segment.code ? <span>{segment.code}</span> : null}
                   <PinButton instrumentSlug={slug} segmentId={segment.id} label={segment.label} />
                 </div>
@@ -287,39 +286,12 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
                   {segment.label}
                 </HeadingTag>
 
-                {internalCrossreferences.length ? (
-                  <div className="segment-link-row" aria-label={`${segment.label} crossreferences`}>
-                    {internalCrossreferences.map((crossreference) => (
-                      <a
-                        key={crossreference.id}
-                        className="chip"
-                        href={`#${bundle.segments[crossreference.targetSegmentId!]?.anchor ?? ""}`}
-                      >
-                        {crossreference.label}
-                      </a>
-                    ))}
-                  </div>
-                ) : null}
-
-                {inlineTerms.length ? (
-                  <div className="segment-term-list">
-                    {inlineTerms.map((term) => (
-                      <details key={term.id} className="term-disclosure">
-                        <summary>{term.label}</summary>
-                        <p>{term.definition}</p>
-                      </details>
-                    ))}
-                  </div>
-                ) : null}
-
                 {segment.text.trim() ? (
                   <div
                     className="reader-segment__body"
                     dangerouslySetInnerHTML={{ __html: renderSegmentHtml(segment.text, inlineLinks) }}
                   />
-                ) : (
-                  <p className="muted">No body text for this structural segment.</p>
-                )}
+                ) : null}
               </section>
             );
           })}

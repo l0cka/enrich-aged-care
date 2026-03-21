@@ -387,8 +387,7 @@ button {
   margin-left: auto;
 }
 
-.result-card__meta,
-.status-pill {
+.result-card__meta {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 0.4rem;
@@ -555,17 +554,25 @@ button {
 }
 
 .reader-hero__controls {
-  display: grid;
-  gap: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.status-pill {
-  width: fit-content;
-  padding: 0.45rem 0.75rem;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--color-accent-soft) 68%, transparent);
-  color: var(--color-accent-strong);
-  font-weight: 700;
+.reader-hero__options {
+  font-size: 0.85rem;
+}
+
+.reader-hero__options summary {
+  cursor: pointer;
+  color: var(--color-muted);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.reader-hero__options .button-row {
+  margin-top: 0.5rem;
 }
 
 .toc-list {
@@ -847,7 +854,7 @@ button {
   font-size: clamp(1.2rem, 1.45vw, 1.5rem);
 }
 
-.margin-rail__tracking-label {
+.margin-rail__heading .eyebrow {
   margin: 0;
   font-size: 0.76rem;
   font-weight: 700;
@@ -1120,21 +1127,27 @@ button {
     display: none;
   }
 
+  /* ── Reorder: content first on mobile ── */
+  .reader-surface { order: -1; }
+
   /* ── TOC rail: collapse by default on mobile ── */
   .toc-rail {
     max-height: 3.5rem;
     overflow: hidden;
     position: relative;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.35s ease;
+    cursor: pointer;
   }
 
-  .toc-rail:focus-within,
-  .toc-rail[open] {
-    max-height: none;
+  .toc-rail:focus,
+  .toc-rail:focus-within {
+    max-height: 80vh;
+    overflow-y: auto;
+    cursor: default;
   }
 
   .toc-rail::after {
-    content: "Tap to expand table of contents";
+    content: "Tap to expand contents";
     position: absolute;
     bottom: 0;
     left: 0;
@@ -1147,6 +1160,7 @@ button {
     pointer-events: none;
   }
 
+  .toc-rail:focus::after,
   .toc-rail:focus-within::after {
     display: none;
   }
@@ -1155,15 +1169,19 @@ button {
   .margin-rail {
     max-height: 3rem;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.35s ease;
+    cursor: pointer;
   }
 
+  .margin-rail:focus,
   .margin-rail:focus-within {
-    max-height: none;
+    max-height: 80vh;
+    overflow-y: auto;
+    cursor: default;
   }
 
   .margin-rail::after {
-    content: "Tap to expand margin intelligence";
+    content: "Tap to expand";
     position: absolute;
     bottom: 0;
     left: 0;
@@ -1176,6 +1194,7 @@ button {
     pointer-events: none;
   }
 
+  .margin-rail:focus::after,
   .margin-rail:focus-within::after {
     display: none;
   }
