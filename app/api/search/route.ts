@@ -8,11 +8,13 @@ export async function GET(request: Request) {
   const category = searchParams.get("category") ?? "";
   const term = searchParams.get("term") ?? "";
   const citation = searchParams.get("citation") ?? "";
+  const themesParam = searchParams.get("themes") ?? "";
+  const themes = themesParam ? themesParam.split(",").filter(Boolean) : undefined;
 
-  if (!query && !instrument && !type && !category && !term && !citation) {
+  if (!query && !instrument && !type && !category && !term && !citation && !themes?.length) {
     return Response.json([]);
   }
 
-  const results = await searchCorpus({ category, citation, instrument, query, term, type });
+  const results = await searchCorpus({ category, citation, instrument, query, term, themes, type });
   return Response.json(results);
 }

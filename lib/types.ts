@@ -113,6 +113,59 @@ export type SearchResult = {
   matchedTerms: string[];
   matchedCitations: string[];
   score: number;
+  semanticScore?: number;
+  themes?: string[];
+};
+
+// ── Embedding & Classification Indexes ────────────────────────
+
+export type EmbeddingEntry = {
+  segmentId: string;
+  instrumentSlug: string;
+  vector: number[];
+};
+
+export type EmbeddingIndex = {
+  generatedAt: string;
+  dimensions: number;
+  entries: EmbeddingEntry[];
+};
+
+export type ThemeScore = {
+  theme: string;
+  score: number;
+};
+
+export type ClassificationEntry = {
+  segmentId: string;
+  instrumentSlug: string;
+  themes: ThemeScore[];
+};
+
+export type ClassificationIndex = {
+  generatedAt: string;
+  themeLabels: string[];
+  entries: ClassificationEntry[];
+};
+
+export type SimilarProvision = {
+  segmentId: string;
+  instrumentSlug: string;
+  anchor: string;
+  label: string;
+  code: string | null;
+  score: number;
+};
+
+export type SimilarityEntry = {
+  segmentId: string;
+  instrumentSlug: string;
+  similar: SimilarProvision[];
+};
+
+export type SimilarityIndex = {
+  generatedAt: string;
+  entries: SimilarityEntry[];
 };
 
 export type RelatedProvision = {

@@ -13,6 +13,14 @@ function readParam(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
+function readParamArray(value: string | string[] | undefined): string[] {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean);
+  }
+
+  return value ? [value] : [];
+}
+
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const [params, facets, bundles] = await Promise.all([searchParams, getSearchFacets(), getAllInstrumentBundles()]);
   const query = readParam(params.q);
@@ -21,9 +29,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const category = readParam(params.category);
   const term = readParam(params.term);
   const citation = readParam(params.citation);
-  const hasSearchIntent = Boolean(query || instrument || type || category || term || citation);
+  const themes = readParamArray(params.themes);
+  const hasSearchIntent = Boolean(query || instrument || type || category || term || citation || themes.length);
   const results = hasSearchIntent
-    ? await searchCorpus({ category, citation, instrument, query, term, type })
+    ? await searchCorpus({ category, citation, instrument, query, term, themes: themes.length ? themes : undefined, type })
     : [];
   const titleBySlug = Object.fromEntries(bundles.map((bundle) => [bundle.manifest.slug, bundle.manifest.title]));
 
@@ -31,7 +40,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     <div className="search-page">
       <div className="search-page__header">
         <p className="eyebrow">Corpus search</p>
-        <h1>Search by phrase, structure, definition, or cited instrument.</h1>
+        <h1>Search by phrase, question, theme, or structure.</h1>
       </div>
 
       <div className="search-layout">
@@ -43,6 +52,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             facets={facets}
             instrument={instrument}
             query={query}
+            selectedThemes={themes}
             showFilters
             term={term}
             type={type}
@@ -53,21 +63,22 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           {hasSearchIntent ? (
             <p className="search-results__meta">
               {results.length} result{results.length === 1 ? "" : "s"}
+              {themes.length ? ` · filtered by ${themes.join(", ")}` : ""}
             </p>
           ) : (
             <div className="search-empty-guide">
               <h2>Search across all three instruments</h2>
               <p>
-                Try a section number, defined term, or topic. Use the filters to narrow results by instrument,
-                segment type, or cited document.
+                Try a natural-language question, section number, defined term, or topic.
+                Use the filters and themes to narrow results.
               </p>
               <p className="eyebrow">Example searches</p>
               <div className="search-empty-examples">
+                <Link className="chip" href="/search?q=What+are+a+provider%27s+obligations+around+restraints">provider obligations around restraints</Link>
                 <Link className="chip" href="/search?q=registered+nurse">registered nurse</Link>
                 <Link className="chip" href="/search?q=quality+standards">quality standards</Link>
-                <Link className="chip" href="/search?q=restraint">restraint</Link>
+                <Link className="chip" href="/search?q=complaints+process">complaints process</Link>
                 <Link className="chip" href="/search?q=responsible+person">responsible person</Link>
-                <Link className="chip" href="/search?q=complaints">complaints</Link>
               </div>
             </div>
           )}
@@ -85,6 +96,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <span>{titleBySlug[result.instrumentSlug] ?? result.instrumentSlug}</span>
                     <span>{result.type ?? "segment"}</span>
                     <span>{result.category.replace(/_/g, " ")}</span>
+                    {result.semanticScore != null ? (
+                      <span className="result-card__semantic-badge">semantic match</span>
+                    ) : null}
                   </p>
                   <h2>
                     <Link href={`/${result.instrumentSlug}#${result.anchor}`}>{result.label}</Link>
@@ -92,6 +106,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   <p>{result.excerpt}</p>
 
                   <div className="chip-row">
+                    {result.themes?.slice(0, 3).map((theme) => (
+                      <span key={`theme:${theme}`} className="chip chip--theme">
+                        {theme}
+                      </span>
+                    ))}
                     {result.matchedTerms.map((item) => (
                       <span key={`term:${item}`} className="chip">
                         term: {item}

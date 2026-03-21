@@ -7,6 +7,7 @@ type SearchFacets = {
   citations?: string[];
   instruments?: InstrumentManifestEntry[];
   terms?: string[];
+  themes?: string[];
   types?: string[];
 };
 
@@ -18,6 +19,7 @@ type SearchFormProps = {
   facets?: SearchFacets;
   instrument?: string;
   query?: string;
+  selectedThemes?: string[];
   showFilters?: boolean;
   submitLabel?: string;
   term?: string;
@@ -32,6 +34,7 @@ export function CorpusSearchForm({
   facets,
   instrument,
   query,
+  selectedThemes,
   showFilters = false,
   submitLabel = "Search",
   term,
@@ -44,13 +47,33 @@ export function CorpusSearchForm({
         <input
           defaultValue={query}
           name="q"
-          placeholder="Search a phrase, section number, definition, or cited instrument"
+          placeholder="Search a phrase, section number, or ask a question"
           type="search"
         />
       </label>
 
       {showFilters && facets ? (
         <div className="search-form__filters">
+          {facets.themes?.length ? (
+            <fieldset className="search-form__themes">
+              <legend>Themes</legend>
+              <div className="chip-row chip-row--wrap">
+                {facets.themes.map((theme) => (
+                  <label key={theme} className={clsx("chip chip--toggle", selectedThemes?.includes(theme) && "chip--active")}>
+                    <input
+                      type="checkbox"
+                      name="themes"
+                      value={theme}
+                      defaultChecked={selectedThemes?.includes(theme)}
+                      className="sr-only"
+                    />
+                    {theme}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
+
           <label>
             <span>Instrument</span>
             <select defaultValue={instrument ?? ""} name="instrument">

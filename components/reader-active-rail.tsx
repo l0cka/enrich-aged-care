@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 
-import type { RelatedProvision } from "@/lib/types";
+import type { RelatedProvision, SimilarProvision } from "@/lib/types";
 
 type RailCrossreference = {
   href: string | null;
@@ -43,17 +43,19 @@ type RailPanel = {
   id: string;
   label: string;
   relatedProvisions: RelatedProvision[];
+  similarProvisions?: SimilarProvision[];
   terms: RailTerm[];
   persons?: RailPerson[];
   externalDocuments?: RailExternalDocument[];
 };
 
 type ReaderActiveRailProps = {
+  instrumentTitles?: Record<string, string>;
   panels: Record<string, RailPanel>;
   instrumentSlug: string;
 };
 
-export function ReaderActiveRail({ panels, instrumentSlug }: ReaderActiveRailProps) {
+export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: ReaderActiveRailProps) {
   const orderedPanelIds = useMemo(() => Object.keys(panels), [panels]);
   const [activePanelId, setActivePanelId] = useState<string | null>(orderedPanelIds[0] ?? null);
 
@@ -280,6 +282,26 @@ export function ReaderActiveRail({ panels, instrumentSlug }: ReaderActiveRailPro
               <li key={doc.id}>
                 <span>{doc.name}</span>
                 <p className="muted">{doc.jurisdiction}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {activePanel.similarProvisions?.length ? (
+        <section className="margin-rail__section">
+          <h3>Similar provisions</h3>
+          <ul className="stack-list">
+            {activePanel.similarProvisions.slice(0, 5).map((provision) => (
+              <li key={`${provision.instrumentSlug}:${provision.segmentId}`}>
+                <a href={`/${provision.instrumentSlug}#${provision.anchor}`}>
+                  {provision.label}
+                </a>
+                <p className="muted">
+                  {instrumentTitles?.[provision.instrumentSlug] ?? provision.instrumentSlug.replace(/-/g, " ")}
+                  {" · "}
+                  {Math.round(provision.score * 100)}% similar
+                </p>
               </li>
             ))}
           </ul>

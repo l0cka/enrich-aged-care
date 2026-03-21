@@ -3,6 +3,7 @@ import path from "node:path";
 import { cache } from "react";
 
 import { instrumentManifestBySlug } from "@/lib/instruments";
+import { getClassificationIndex } from "@/lib/server/semantic";
 import type { EnrichedInstrumentBundle, InstrumentManifestEntry } from "@/lib/types";
 
 const generatedDataDir = path.join(process.cwd(), "generated-data");
@@ -48,7 +49,11 @@ export const getAllInstrumentBundles = cache(async (): Promise<EnrichedInstrumen
 });
 
 export async function getSearchFacets() {
-  const bundles = await getAllInstrumentBundles();
+  const [bundles, classificationIndex] = await Promise.all([
+    getAllInstrumentBundles(),
+    getClassificationIndex(),
+  ]);
+
   const terms = new Set<string>();
   const citations = new Set<string>();
   const types = new Set<string>();
@@ -69,6 +74,7 @@ export async function getSearchFacets() {
     citations: Array.from(citations).sort((left, right) => left.localeCompare(right)),
     instruments: bundles.map((bundle) => bundle.manifest),
     terms: Array.from(terms).sort((left, right) => left.localeCompare(right)),
+    themes: classificationIndex?.themeLabels ?? [],
     types: Array.from(types).sort((left, right) => left.localeCompare(right)),
   };
 }

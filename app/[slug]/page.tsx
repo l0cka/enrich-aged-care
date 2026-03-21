@@ -9,6 +9,7 @@ import { getVisibleSegmentIds } from "@/lib/reader";
 import { renderSegmentHtml, type InlineLink } from "@/lib/render-segment-html";
 import { getGeneratedManifest, getInstrumentBundle } from "@/lib/server/data";
 import { getRelatedProvisionIndex } from "@/lib/server/related-provisions";
+import { getSimilarityIndex } from "@/lib/server/semantic";
 
 type ReaderPageProps = {
   params: Promise<{ slug: string }>;
@@ -67,7 +68,11 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
     notFound();
   }
 
-  const [bundle, relatedProvisionIndex] = await Promise.all([getInstrumentBundle(slug), getRelatedProvisionIndex()]);
+  const [bundle, relatedProvisionIndex, similarityIndex] = await Promise.all([
+    getInstrumentBundle(slug),
+    getRelatedProvisionIndex(),
+    getSimilarityIndex(),
+  ]);
   const currentSearchParams = new URLSearchParams(
     Object.entries(rawSearchParams).flatMap(([key, value]) =>
       Array.isArray(value) ? value.map((item) => [key, item]) : value ? [[key, value]] : [],
@@ -153,6 +158,11 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
           terms: segment.termIds.map((id) => bundle.termLookup[id]).filter(Boolean).slice(0, 12),
           persons: (personsBySegment.get(segment.id) ?? []).slice(0, 6),
           externalDocuments: (extDocsBySegment.get(segment.id) ?? []).slice(0, 6),
+          similarProvisions: (
+            similarityIndex?.entries.find(
+              (e) => e.instrumentSlug === slug && e.segmentId === segment.id,
+            )?.similar ?? []
+          ).slice(0, 10),
         },
       ];
     }),
@@ -315,7 +325,11 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
           })}
         </article>
 
-        <ReaderActiveRail panels={railPanels} instrumentSlug={slug} />
+        <ReaderActiveRail
+          instrumentTitles={Object.fromEntries(manifest.map((m) => [m.slug, m.title]))}
+          panels={railPanels}
+          instrumentSlug={slug}
+        />
       </div>
     </div>
   );
