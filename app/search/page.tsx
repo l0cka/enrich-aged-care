@@ -2,24 +2,13 @@ import Link from "next/link";
 
 import { CorpusSearchForm } from "@/components/corpus-search-form";
 import { PinButton } from "@/components/pin-button";
+import { readParam, readParamArray } from "@/lib/search-params";
 import { getAllInstrumentBundles, getSearchFacets } from "@/lib/server/data";
 import { searchCorpus } from "@/lib/server/search";
 
 type SearchPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function readParam(value: string | string[] | undefined): string {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
-
-function readParamArray(value: string | string[] | undefined): string[] {
-  if (Array.isArray(value)) {
-    return value.filter(Boolean);
-  }
-
-  return value ? [value] : [];
-}
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const [params, facets, bundles] = await Promise.all([searchParams, getSearchFacets(), getAllInstrumentBundles()]);

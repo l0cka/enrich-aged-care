@@ -12,27 +12,27 @@ function readBundle(slug: string): EnrichedInstrumentBundle {
 }
 
 describe("reader visibility", () => {
-  it("hides front matter and endnotes by default", () => {
+  it("hides front matter by default while keeping substantive provisions visible", () => {
     const bundle = readBundle("aged-care-act-2024");
     const visibleIds = getVisibleSegmentIds(bundle, {
       showEndnotes: false,
       showFrontMatter: false,
     });
 
-    expect(visibleIds).not.toContain("seg:front-matter");
-    expect(visibleIds).not.toContain("seg:endnotes");
-    expect(visibleIds).toContain("seg:section-1-short-title");
+    expect(visibleIds).not.toContain("seg:4");
+    expect(visibleIds).toContain("seg:2257");
+    expect(visibleIds).toContain("seg:797");
   });
 
-  it("can explicitly include front matter and endnotes", () => {
+  it("can explicitly include front matter and endnote content", () => {
     const bundle = readBundle("aged-care-act-2024");
     const visibleIds = getVisibleSegmentIds(bundle, {
       showEndnotes: true,
       showFrontMatter: true,
     });
 
-    expect(visibleIds).toContain("seg:front-matter");
-    expect(visibleIds).toContain("seg:endnotes");
-    expect(visibleIds.some((id) => id.startsWith("seg:endnote-"))).toBe(true);
+    expect(visibleIds).toContain("seg:4");
+    expect(visibleIds).toContain("seg:797");
+    expect(visibleIds.some((id) => bundle.endnoteIds.includes(id))).toBe(true);
   });
 });

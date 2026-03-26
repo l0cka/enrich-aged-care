@@ -4,11 +4,16 @@ import { notFound } from "next/navigation";
 
 import { MapProvisionList } from "@/components/map-provision-list";
 import { getAllInstrumentBundles } from "@/lib/server/data";
-import { getBuiltInMap } from "@/lib/server/maps";
+import { getBuiltInMap, getBuiltInMaps } from "@/lib/server/maps";
 
 type MapDetailPageProps = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateStaticParams() {
+  const maps = await getBuiltInMaps();
+  return maps.map((map) => ({ id: map.id }));
+}
 
 export async function generateMetadata({ params }: MapDetailPageProps): Promise<Metadata> {
   const { id } = await params;

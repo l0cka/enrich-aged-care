@@ -4,6 +4,7 @@ import path from "node:path";
 import Isaacus from "isaacus";
 
 import type {
+  ClassificationEntry,
   ClassificationIndex,
   EmbeddingEntry,
   EmbeddingIndex,
@@ -18,6 +19,12 @@ const generatedDataDir = path.join(process.cwd(), "generated-data");
 let _embeddingIndex: EmbeddingIndex | null | undefined;
 let _classificationIndex: ClassificationIndex | null | undefined;
 let _similarityIndex: SimilarityIndex | null | undefined;
+let _classificationEntryByKey: Map<string, ClassificationEntry> | null | undefined;
+let _embeddingMagnitudeByKey: Map<string, number> | null | undefined;
+
+function buildSegmentKey(instrumentSlug: string, segmentId: string): string {
+  return `${instrumentSlug}:${segmentId}`;
+}
 
 async function readJsonFile<T>(filename: string): Promise<T | null> {
   try {
@@ -31,6 +38,14 @@ async function readJsonFile<T>(filename: string): Promise<T | null> {
 export async function getEmbeddingIndex(): Promise<EmbeddingIndex | null> {
   if (_embeddingIndex === undefined) {
     _embeddingIndex = await readJsonFile<EmbeddingIndex>("embeddings.json");
+    _embeddingMagnitudeByKey = _embeddingIndex
+      ? new Map(
+          _embeddingIndex.entries.map((entry) => [
+            buildSegmentKey(entry.instrumentSlug, entry.segmentId),
+            magnitude(entry.vector),
+          ]),
+        )
+      : null;
   }
 
   return _embeddingIndex;
@@ -39,6 +54,14 @@ export async function getEmbeddingIndex(): Promise<EmbeddingIndex | null> {
 export async function getClassificationIndex(): Promise<ClassificationIndex | null> {
   if (_classificationIndex === undefined) {
     _classificationIndex = await readJsonFile<ClassificationIndex>("classifications.json");
+    _classificationEntryByKey = _classificationIndex
+      ? new Map(
+          _classificationIndex.entries.map((entry) => [
+            buildSegmentKey(entry.instrumentSlug, entry.segmentId),
+            entry,
+          ]),
+        )
+      : null;
   }
 
   return _classificationIndex;
@@ -92,17 +115,6 @@ function magnitude(v: number[]): number {
   return Math.sqrt(dotProduct(v, v));
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  const magA = magnitude(a);
-  const magB = magnitude(b);
-
-  if (magA === 0 || magB === 0) {
-    return 0;
-  }
-
-  return dotProduct(a, b) / (magA * magB);
-}
-
 export type SemanticHit = {
   segmentId: string;
   instrumentSlug: string;
@@ -123,7 +135,8 @@ export function semanticSearch(
   const scores: SemanticHit[] = [];
 
   for (const entry of entries) {
-    const entryMag = magnitude(entry.vector);
+    const entryMag = _embeddingMagnitudeByKey?.get(buildSegmentKey(entry.instrumentSlug, entry.segmentId))
+      ?? magnitude(entry.vector);
 
     if (entryMag === 0) {
       continue;
@@ -145,9 +158,10 @@ export function getSegmentThemes(
   segmentId: string,
   minScore = 0.5,
 ): string[] {
-  const entry = classificationIndex.entries.find(
-    (e) => e.instrumentSlug === instrumentSlug && e.segmentId === segmentId,
-  );
+  const entry = _classificationEntryByKey?.get(buildSegmentKey(instrumentSlug, segmentId))
+    ?? classificationIndex.entries.find(
+      (e) => e.instrumentSlug === instrumentSlug && e.segmentId === segmentId,
+    );
 
   if (!entry) {
     return [];

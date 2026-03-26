@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useMemo } from "react";
 
+import { useActiveReaderItem } from "@/components/use-active-reader-item";
 import type { RelatedProvision, SimilarProvision } from "@/lib/types";
 
 type RailCrossreference = {
@@ -32,132 +33,43 @@ type RailPerson = {
 
 type RailExternalDocument = {
   id: string;
-  name: string;
   jurisdiction: string;
+  name: string;
 };
 
 type RailPanel = {
   anchor: string;
   citations: RailCitation[];
   crossreferences: RailCrossreference[];
+  externalDocuments?: RailExternalDocument[];
   id: string;
   label: string;
+  persons?: RailPerson[];
   relatedProvisions: RelatedProvision[];
   similarProvisions?: SimilarProvision[];
   terms: RailTerm[];
-  persons?: RailPerson[];
-  externalDocuments?: RailExternalDocument[];
 };
 
 type ReaderActiveRailProps = {
+  instrumentSlug: string;
   instrumentTitles?: Record<string, string>;
   panels: Record<string, RailPanel>;
-  instrumentSlug: string;
 };
 
-export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: ReaderActiveRailProps) {
+export function ReaderActiveRail({ instrumentSlug, instrumentTitles, panels }: ReaderActiveRailProps) {
   const orderedPanelIds = useMemo(() => Object.keys(panels), [panels]);
-  const [activePanelId, setActivePanelId] = useState<string | null>(orderedPanelIds[0] ?? null);
-
-  const syncActivePanel = useEffectEvent(() => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-panel-id]"));
-
-    if (!nodes.length) {
-      return;
-    }
-
-    const activationLine = Math.min(Math.max(window.innerHeight * 0.26, 190), 300);
-    let nextPanelId = nodes[0]?.getAttribute("data-panel-id");
-
-    for (const node of nodes) {
-      if (node.getBoundingClientRect().top <= activationLine) {
-        nextPanelId = node.getAttribute("data-panel-id");
-        continue;
-      }
-
-      break;
-    }
-
-    if (nextPanelId) {
-      setActivePanelId((current) => (current === nextPanelId ? current : nextPanelId));
-    }
+  const trackedItems = useMemo(
+    () => orderedPanelIds.map((id) => ({ anchor: panels[id]!.anchor, id })),
+    [orderedPanelIds, panels],
+  );
+  const activePanelId = useActiveReaderItem({
+    items: trackedItems,
+    selector: "[data-panel-id]",
+    nodeIdAttribute: "data-panel-id",
+    activationLineRatio: 0.26,
+    maxActivationLine: 300,
+    minActivationLine: 190,
   });
-
-  useEffect(() => {
-    if (!orderedPanelIds.length) {
-      return;
-    }
-
-    let frameId = 0;
-    let timeoutIds: number[] = [];
-
-    const scheduleSync = () => {
-      if (frameId) {
-        return;
-      }
-
-      frameId = window.requestAnimationFrame(() => {
-        frameId = 0;
-        syncActivePanel();
-      });
-    };
-
-    const updateFromHash = () => {
-      timeoutIds.forEach((id) => window.clearTimeout(id));
-      timeoutIds = [];
-
-      const hash = window.location.hash.slice(1);
-
-      if (!hash) {
-        scheduleSync();
-        return;
-      }
-
-      const match = orderedPanelIds.find((id) => panels[id]?.anchor === hash);
-
-      if (match) {
-        let userHasScrolled = false;
-        const onUserScroll = () => { userHasScrolled = true; };
-        window.addEventListener("scroll", onUserScroll, { passive: true, once: true });
-
-        const runHashSync = () => {
-          if (userHasScrolled) {
-            // User started scrolling — stop fighting them
-            timeoutIds.forEach((id) => window.clearTimeout(id));
-            timeoutIds = [];
-            return;
-          }
-
-          document.getElementById(hash)?.scrollIntoView();
-          setActivePanelId(match);
-          scheduleSync();
-        };
-
-        // Try once immediately, then a few retries for slow renders
-        [0, 200, 800].forEach((delay) => {
-          timeoutIds.push(window.setTimeout(runHashSync, delay));
-        });
-      }
-    };
-
-    scheduleSync();
-    updateFromHash();
-    window.addEventListener("scroll", scheduleSync, { passive: true });
-    window.addEventListener("resize", scheduleSync);
-    window.addEventListener("hashchange", updateFromHash);
-
-    return () => {
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
-
-      timeoutIds.forEach((id) => window.clearTimeout(id));
-
-      window.removeEventListener("scroll", scheduleSync);
-      window.removeEventListener("resize", scheduleSync);
-      window.removeEventListener("hashchange", updateFromHash);
-    };
-  }, [orderedPanelIds, panels]);
 
   const activePanel = (activePanelId ? panels[activePanelId] : null) ?? panels[orderedPanelIds[0] ?? ""];
 
@@ -266,12 +178,12 @@ export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: R
 
       {activePanel.externalDocuments?.length ? (
         <section className="margin-rail__section">
-          <h3>External legislation</h3>
+          <h3>External documents</h3>
           <ul className="stack-list">
-            {activePanel.externalDocuments.map((doc) => (
-              <li key={doc.id}>
-                <span>{doc.name}</span>
-                <p className="muted">{doc.jurisdiction}</p>
+            {activePanel.externalDocuments.map((document) => (
+              <li key={document.id}>
+                <span>{document.name}</span>
+                <p className="muted">{document.jurisdiction}</p>
               </li>
             ))}
           </ul>
@@ -280,17 +192,17 @@ export function ReaderActiveRail({ instrumentTitles, panels, instrumentSlug }: R
 
       {activePanel.similarProvisions?.length ? (
         <section className="margin-rail__section">
-          <h3>Similar provisions</h3>
+          <h3>Semantically similar</h3>
           <ul className="stack-list">
-            {activePanel.similarProvisions.slice(0, 5).map((provision) => (
+            {activePanel.similarProvisions.map((provision) => (
               <li key={`${provision.instrumentSlug}:${provision.segmentId}`}>
                 <a href={`/${provision.instrumentSlug}#${provision.anchor}`}>
                   {provision.label}
                 </a>
                 <p className="muted">
-                  {instrumentTitles?.[provision.instrumentSlug] ?? provision.instrumentSlug.replace(/-/g, " ")}
-                  {" · "}
-                  {Math.round(provision.score * 100)}% similar
+                  {(instrumentTitles?.[provision.instrumentSlug] ?? provision.instrumentSlug) === instrumentTitles?.[instrumentSlug]
+                    ? provision.code ?? "Related provision"
+                    : `${instrumentTitles?.[provision.instrumentSlug] ?? provision.instrumentSlug} · ${provision.code ?? "Related provision"}`}
                 </p>
               </li>
             ))}

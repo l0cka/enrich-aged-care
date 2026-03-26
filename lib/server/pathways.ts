@@ -37,6 +37,7 @@ function makeNode(segment: DerivedSegment, instrumentSlug: string): PathwayNode 
   return {
     segmentId: segment.id,
     instrumentSlug,
+    anchor: segment.anchor,
     label: segment.label,
     code: segment.code,
     text: segment.text.slice(0, 200),

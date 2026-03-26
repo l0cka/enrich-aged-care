@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import type { TocItem } from "@/lib/types";
+import { useActiveReaderItem } from "@/components/use-active-reader-item";
 
 type ReaderTocRailProps = {
   instrumentTitle: string;
@@ -10,106 +11,17 @@ type ReaderTocRailProps = {
 };
 
 export function ReaderTocRail({ instrumentTitle, items }: ReaderTocRailProps) {
-  const [activeAnchor, setActiveAnchor] = useState<string | null>(items[0]?.anchor ?? null);
-
-  const syncActiveAnchor = useEffectEvent(() => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-panel-id]"));
-
-    if (!nodes.length) {
-      return;
-    }
-
-    const activationLine = Math.min(Math.max(window.innerHeight * 0.24, 170), 280);
-    let nextAnchor = nodes[0]?.id ?? null;
-
-    for (const node of nodes) {
-      if (node.getBoundingClientRect().top <= activationLine) {
-        nextAnchor = node.id;
-        continue;
-      }
-
-      break;
-    }
-
-    if (nextAnchor) {
-      setActiveAnchor((current) => (current === nextAnchor ? current : nextAnchor));
-    }
+  const trackedItems = useMemo(
+    () => items.map((item) => ({ anchor: item.anchor, id: item.anchor })),
+    [items],
+  );
+  const activeAnchor = useActiveReaderItem({
+    items: trackedItems,
+    selector: "[data-panel-id]",
+    activationLineRatio: 0.24,
+    minActivationLine: 170,
+    maxActivationLine: 280,
   });
-
-  useEffect(() => {
-    if (!items.length) {
-      return;
-    }
-
-    let frameId = 0;
-    let timeoutIds: number[] = [];
-
-    const scheduleSync = () => {
-      if (frameId) {
-        return;
-      }
-
-      frameId = window.requestAnimationFrame(() => {
-        frameId = 0;
-        syncActiveAnchor();
-      });
-    };
-
-    const updateFromHash = () => {
-      timeoutIds.forEach((id) => window.clearTimeout(id));
-      timeoutIds = [];
-
-      const hash = window.location.hash.slice(1);
-
-      if (!hash) {
-        scheduleSync();
-        return;
-      }
-
-      if (items.some((item) => item.anchor === hash)) {
-        let userHasScrolled = false;
-        const onUserScroll = () => { userHasScrolled = true; };
-        window.addEventListener("scroll", onUserScroll, { passive: true, once: true });
-
-        const runHashSync = () => {
-          if (userHasScrolled) {
-            timeoutIds.forEach((id) => window.clearTimeout(id));
-            timeoutIds = [];
-            return;
-          }
-
-          document.getElementById(hash)?.scrollIntoView();
-          setActiveAnchor(hash);
-          scheduleSync();
-        };
-
-        [0, 200, 800].forEach((delay) => {
-          timeoutIds.push(window.setTimeout(runHashSync, delay));
-        });
-        return;
-      }
-
-      scheduleSync();
-    };
-
-    scheduleSync();
-    updateFromHash();
-    window.addEventListener("scroll", scheduleSync, { passive: true });
-    window.addEventListener("resize", scheduleSync);
-    window.addEventListener("hashchange", updateFromHash);
-
-    return () => {
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
-
-      timeoutIds.forEach((id) => window.clearTimeout(id));
-
-      window.removeEventListener("scroll", scheduleSync);
-      window.removeEventListener("resize", scheduleSync);
-      window.removeEventListener("hashchange", updateFromHash);
-    };
-  }, [items]);
 
   useEffect(() => {
     if (!activeAnchor) {

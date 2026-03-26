@@ -44,6 +44,8 @@ export function CompareView({ data }: CompareViewProps) {
           {visibleSections.map((section) => (
             <li key={section.id}>
               <button
+                aria-controls={`compare-section-panel-${section.id}`}
+                aria-expanded={selectedId === section.id}
                 className={`compare-section-btn ${selectedId === section.id ? "compare-section-btn--active" : ""} ${section.relatedProvisions.length > 0 ? "compare-section-btn--linked" : ""}`}
                 onClick={() => setSelectedId(selectedId === section.id ? null : section.id)}
                 type="button"
@@ -57,7 +59,10 @@ export function CompareView({ data }: CompareViewProps) {
               </button>
 
               {selectedId === section.id ? (
-                <div className="compare-section-expanded">
+                <div
+                  className="compare-section-expanded"
+                  id={`compare-section-panel-${section.id}`}
+                >
                   {/* Pre-generated trusted HTML from renderSegmentHtml — same pattern as reader */}
                   <div
                     className="reader-segment__body"

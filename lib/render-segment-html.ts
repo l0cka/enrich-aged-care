@@ -21,7 +21,7 @@ function normalizeTableHeader(value: string): string {
 function splitBlocks(bodyText: string): string[] {
   return bodyText
     .split(/\n{2,}/)
-    .map((block) => block.replace(/\s+$/, "")) // trim trailing only, keep leading tabs
+    .map((block) => block.replace(/^\n+/, "").replace(/\s+$/, "")) // trim leading blank lines and trailing whitespace, keep leading tabs
     .filter(Boolean);
 }
 

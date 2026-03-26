@@ -16,17 +16,6 @@ function magnitude(v: number[]): number {
   return Math.sqrt(dotProduct(v, v));
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  const magA = magnitude(a);
-  const magB = magnitude(b);
-
-  if (magA === 0 || magB === 0) {
-    return 0;
-  }
-
-  return dotProduct(a, b) / (magA * magB);
-}
-
 export function computeSimilarity(
   embeddings: EmbeddingEntry[],
   allSegments: Map<string, { instrumentSlug: string; segments: Record<string, DerivedSegment> }>,
