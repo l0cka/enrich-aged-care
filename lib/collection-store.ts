@@ -16,7 +16,12 @@ const emptyCollectionStore: CollectionStore = { version: currentVersion, items: 
 let cachedRaw: string | null | undefined;
 let cachedStore: CollectionStore = emptyCollectionStore;
 let cachedItems: CollectionItem[] = emptyItems;
+let cachedItemKeys = new Set<string>();
 let cachedCount: number = 0;
+
+function buildCollectionKey(instrumentSlug: string, segmentId: string): string {
+  return `${instrumentSlug}:${segmentId}`;
+}
 
 function readStore(): CollectionStore {
   if (typeof window === "undefined") {
@@ -36,6 +41,7 @@ function readStore(): CollectionStore {
     if (!raw) {
       cachedStore = emptyCollectionStore;
       cachedItems = emptyItems;
+      cachedItemKeys = new Set<string>();
       cachedCount = 0;
       return cachedStore;
     }
@@ -45,18 +51,21 @@ function readStore(): CollectionStore {
     if (parsed.version !== currentVersion) {
       cachedStore = emptyCollectionStore;
       cachedItems = emptyItems;
+      cachedItemKeys = new Set<string>();
       cachedCount = 0;
       return cachedStore;
     }
 
     cachedStore = parsed;
     cachedItems = parsed.items;
+    cachedItemKeys = new Set(parsed.items.map((item) => buildCollectionKey(item.instrumentSlug, item.segmentId)));
     cachedCount = parsed.items.length;
     return cachedStore;
   } catch {
     cachedRaw = null;
     cachedStore = emptyCollectionStore;
     cachedItems = emptyItems;
+    cachedItemKeys = new Set<string>();
     cachedCount = 0;
     return cachedStore;
   }
@@ -68,6 +77,7 @@ function writeStore(store: CollectionStore): void {
   cachedRaw = raw;
   cachedStore = store;
   cachedItems = store.items;
+  cachedItemKeys = new Set(store.items.map((item) => buildCollectionKey(item.instrumentSlug, item.segmentId)));
   cachedCount = store.items.length;
 
   try {
@@ -94,15 +104,14 @@ export function getCollectionCount(): number {
 }
 
 export function isInCollection(instrumentSlug: string, segmentId: string): boolean {
-  return readStore().items.some(
-    (item) => item.instrumentSlug === instrumentSlug && item.segmentId === segmentId,
-  );
+  readStore();
+  return cachedItemKeys.has(buildCollectionKey(instrumentSlug, segmentId));
 }
 
 export function addToCollection(instrumentSlug: string, segmentId: string): void {
   const store = readStore();
 
-  if (store.items.some((item) => item.instrumentSlug === instrumentSlug && item.segmentId === segmentId)) {
+  if (cachedItemKeys.has(buildCollectionKey(instrumentSlug, segmentId))) {
     return;
   }
 
@@ -175,6 +184,7 @@ export function clearCollection(): void {
 export function addBulk(items: { instrumentSlug: string; segmentId: string }[]): number {
   const store = readStore();
   const nextItems = [...store.items];
+  const nextKeys = new Set(cachedItemKeys);
   let added = 0;
 
   for (const { instrumentSlug, segmentId } of items) {
@@ -182,11 +192,14 @@ export function addBulk(items: { instrumentSlug: string; segmentId: string }[]):
       break;
     }
 
-    if (nextItems.some((existing) => existing.instrumentSlug === instrumentSlug && existing.segmentId === segmentId)) {
+    const key = buildCollectionKey(instrumentSlug, segmentId);
+
+    if (nextKeys.has(key)) {
       continue;
     }
 
     nextItems.push({ segmentId, instrumentSlug, note: "", addedAt: Date.now() });
+    nextKeys.add(key);
     added++;
   }
 

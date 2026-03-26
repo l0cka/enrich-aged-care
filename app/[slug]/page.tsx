@@ -5,9 +5,10 @@ import { notFound } from "next/navigation";
 import { PinButton } from "@/components/pin-button";
 import { ReaderActiveRail } from "@/components/reader-active-rail";
 import { ReaderTocRail } from "@/components/reader-toc-rail";
-import { getVisibleSegmentIds } from "@/lib/reader";
 import { renderSegmentHtml, type InlineLink } from "@/lib/render-segment-html";
+import { readParam } from "@/lib/search-params";
 import { getGeneratedManifest, getInstrumentBundle } from "@/lib/server/data";
+import { prepareReaderPageData } from "@/lib/server/reader";
 import { getRelatedProvisionIndex } from "@/lib/server/related-provisions";
 import { getSimilarityIndex } from "@/lib/server/semantic";
 
@@ -15,10 +16,6 @@ type ReaderPageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function readParam(value: string | string[] | undefined): string {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
 
 function buildReaderHref(slug: string, current: URLSearchParams, next: { endnotes?: boolean; frontMatter?: boolean }) {
   const params = new URLSearchParams(current);
@@ -80,93 +77,14 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
   );
   const showFrontMatter = readParam(rawSearchParams.frontMatter) === "1";
   const showEndnotes = readParam(rawSearchParams.endnotes) === "1";
-  const visibleSegmentIds = getVisibleSegmentIds(bundle, { showEndnotes, showFrontMatter });
-  const visibleSegments = visibleSegmentIds.map((id) => bundle.segments[id]).filter(Boolean);
-
-  // Pre-compute entity lists per segment by checking mention span overlaps
-  const personsBySegment = new Map<string, { id: string; name: string; role: string }[]>();
-  const extDocsBySegment = new Map<string, { id: string; name: string; jurisdiction: string }[]>();
-
-  if (bundle.personLookup) {
-    for (const person of Object.values(bundle.personLookup)) {
-      for (const mention of person.mentions) {
-        for (const seg of visibleSegments) {
-          if (mention.start >= seg.span.start && mention.end <= seg.span.end) {
-            const list = personsBySegment.get(seg.id) ?? [];
-            if (!list.some((p) => p.id === person.id)) {
-              list.push({ id: person.id, name: person.name, role: person.role });
-              personsBySegment.set(seg.id, list);
-            }
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  if (bundle.externalDocumentLookup) {
-    for (const doc of Object.values(bundle.externalDocumentLookup)) {
-      for (const mention of doc.mentions) {
-        for (const seg of visibleSegments) {
-          if (mention.start >= seg.span.start && mention.end <= seg.span.end) {
-            const list = extDocsBySegment.get(seg.id) ?? [];
-            if (!list.some((d) => d.id === doc.id)) {
-              list.push({ id: doc.id, name: doc.name, jurisdiction: doc.jurisdiction });
-              extDocsBySegment.set(seg.id, list);
-            }
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  const railPanels = Object.fromEntries(
-    visibleSegments.map((segment) => {
-      const seen = new Set<string>();
-      const crossreferences = segment.crossreferenceIds
-        .map((id) => bundle.crossreferenceLookup[id])
-        .filter(Boolean)
-        .filter((xref) => {
-          const key = xref.targetSegmentId ?? xref.id;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        })
-        .slice(0, 12)
-        .map((crossreference) => ({
-          href: crossreference.targetSegmentId
-            ? `#${bundle.segments[crossreference.targetSegmentId]?.anchor ?? ""}`
-            : crossreference.targetInstrumentSlug
-              ? `/${crossreference.targetInstrumentSlug}`
-              : null,
-          id: crossreference.id,
-          label: crossreference.label,
-          resolution: crossreference.resolution,
-          targetLabel: crossreference.targetLabel,
-        }));
-
-      return [
-        segment.id,
-        {
-          anchor: segment.anchor,
-          citations: segment.citationIds.map((id) => bundle.citationLookup[id]).filter(Boolean).slice(0, 8),
-          crossreferences,
-          id: segment.id,
-          label: segment.label,
-          relatedProvisions: relatedProvisionIndex[`${slug}:${segment.id}`] ?? [],
-          terms: segment.termIds.map((id) => bundle.termLookup[id]).filter(Boolean).slice(0, 12),
-          persons: (personsBySegment.get(segment.id) ?? []).slice(0, 6),
-          externalDocuments: (extDocsBySegment.get(segment.id) ?? []).slice(0, 6),
-          similarProvisions: (
-            similarityIndex?.entries.find(
-              (e) => e.instrumentSlug === slug && e.segmentId === segment.id,
-            )?.similar ?? []
-          ).slice(0, 10),
-        },
-      ];
-    }),
-  );
+  const { railPanels, visibleSegments } = prepareReaderPageData({
+    bundle,
+    instrumentSlug: slug,
+    relatedProvisionIndex,
+    showEndnotes,
+    showFrontMatter,
+    similarityIndex,
+  });
 
   return (
     <div className="reader-page">
@@ -221,18 +139,6 @@ export default async function ReaderPage({ params, searchParams }: ReaderPagePro
                   : segment.level === 3
                     ? "h5"
                     : "h6") as "h2" | "h3" | "h4" | "h5" | "h6";
-
-            const seenTargets = new Set<string>();
-            const internalCrossreferences = segment.crossreferenceIds
-              .map((id) => bundle.crossreferenceLookup[id])
-              .filter((crossreference) => {
-                if (!crossreference?.targetSegmentId) return false;
-                if (seenTargets.has(crossreference.targetSegmentId)) return false;
-                seenTargets.add(crossreference.targetSegmentId);
-                return true;
-              })
-              .slice(0, 8);
-            const inlineTerms = segment.termIds.map((id) => bundle.termLookup[id]).filter(Boolean).slice(0, 8);
 
             // sourceSpan offsets are relative to the full instrument text.
             // segment.text is the body only (heading stripped), so find where

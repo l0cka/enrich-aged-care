@@ -58,31 +58,40 @@ test("reader deep links and shows definitions with terms in margin rail", async 
   await expect(page.locator(".margin-rail")).toContainText("Defined terms");
 });
 
-test("reader shows related provisions across instruments and renders tables", async ({ page }) => {
-  await page.goto("/aged-care-act-2024#86-priority-category-decisions");
-  await page.evaluate(() => document.getElementById("86-priority-category-decisions")?.scrollIntoView());
+test("compare page filters linked sections and opens related provisions", async ({ page }) => {
+  await page.goto("/compare");
 
-  await expect
-    .poll(async () =>
-      page.evaluate(() =>
-        Math.abs(document.getElementById("86-priority-category-decisions")?.getBoundingClientRect().top ?? 9999),
-      ),
-    )
-    .toBeLessThan(220);
-  await expect
-    .poll(async () => page.locator(".margin-rail h2").textContent())
-    .toContain("86 Priority category decisions");
-  await expect(page.getByText("Currently showing for")).toBeVisible();
+  await page.getByRole("checkbox", { name: "Only show linked sections" }).check();
+  await page.getByRole("button", { name: /86 Priority category decisions/ }).click();
 
-  // The margin rail should show related provisions from the Rules
-  await expect(page.locator(".margin-rail")).toContainText("Other instruments");
+  await expect(page.getByText("All service groups—period in which priority category decisions must be made")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open in reader" })).toBeVisible();
+});
 
-  // Navigate to the Rules and check a section with tables
-  await page.goto("/aged-care-rules-2025#87-5-priority-categories-and-eligibility-criteria-for-classification-type-ongoing");
-  await expect
-    .poll(async () => page.locator(".margin-rail h2").textContent())
-    .toContain("87");
-  const section = page.locator('[id="87-5-priority-categories-and-eligibility-criteria-for-classification-type-ongoing"]');
-  await expect(section).toBeVisible();
-  await expect(section.locator(".reader-table").first()).toContainText("Priority categories");
+test("maps page and detail route render built-in map content", async ({ page }) => {
+  await page.goto("/maps");
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Navigate legislation by decision topic.");
+  await expect(page.getByRole("link", { name: /Provider Registration/ })).toBeVisible();
+
+  await page.getByRole("link", { name: /Provider Registration/ }).click();
+  await expect(page).toHaveURL(/\/maps\/provider-registration$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Provider Registration");
+  await expect(page.getByText("No provisions added to this section yet.").first()).toBeVisible();
+});
+
+test("pathway page shows connected provisions and links back to the reader", async ({ page }) => {
+  await page.goto("/pathway/aged-care-act-2024/86-priority-category-decisions");
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("86 Priority category decisions");
+  await expect(page.getByText("specified by").first()).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: "86‑5 All service groups—period in which priority category decisions must be made",
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "← Back to reader" })).toHaveAttribute(
+    "href",
+    "/aged-care-act-2024#86-priority-category-decisions",
+  );
 });

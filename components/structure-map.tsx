@@ -3,17 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { getInstrumentColor } from "@/lib/instruments";
 import type { StructureNode } from "@/lib/server/structure";
-
-const INSTRUMENT_COLORS: Record<string, string> = {
-  "aged-care-act-2024": "var(--color-accent)",
-  "aged-care-rules-2025": "#4da872",
-  "aged-care-consequential-and-transitional-provisions-rules-2025": "#c4933a",
-};
-
-function getColor(slug: string): string {
-  return INSTRUMENT_COLORS[slug] ?? "var(--color-muted)";
-}
 
 type StructureMapProps = {
   instruments: StructureNode[];
@@ -74,7 +65,7 @@ export function StructureMap({ instruments }: StructureMapProps) {
           <TreemapNode
             key={child.id}
             node={child}
-            color={getColor(selectedInstrument)}
+            color={getInstrumentColor(selectedInstrument)}
             depth={0}
             onFocus={setFocusNode}
           />
@@ -94,6 +85,7 @@ type TreemapNodeProps = {
 function TreemapNode({ node, color, depth, onFocus }: TreemapNodeProps) {
   const hasChildren = node.children.length > 0;
   const opacity = Math.max(0.08, 0.25 - depth * 0.05);
+  const sectionCountLabel = `${node.sectionCount} section${node.sectionCount === 1 ? "" : "s"}`;
 
   if (node.sectionCount === 0) return null;
 
@@ -109,6 +101,7 @@ function TreemapNode({ node, color, depth, onFocus }: TreemapNodeProps) {
       <div className="treemap-node__header">
         {hasChildren ? (
           <button
+            aria-label={`Focus ${node.label} (${sectionCountLabel})`}
             className="treemap-node__label"
             onClick={() => onFocus(node)}
             type="button"
@@ -117,13 +110,14 @@ function TreemapNode({ node, color, depth, onFocus }: TreemapNodeProps) {
           </button>
         ) : (
           <Link
+            aria-label={`Open ${node.label} (${sectionCountLabel})`}
             className="treemap-node__label"
             href={`/${node.instrumentSlug}#${node.anchor}`}
           >
             {node.label}
           </Link>
         )}
-        <span className="treemap-node__count">
+        <span aria-label={sectionCountLabel} className="treemap-node__count">
           {node.sectionCount}
         </span>
       </div>

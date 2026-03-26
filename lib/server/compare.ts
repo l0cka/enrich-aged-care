@@ -1,8 +1,8 @@
 import { cache } from "react";
 
-import { getAllInstrumentBundles, getInstrumentBundle } from "@/lib/server/data";
+import { getInstrumentBundle } from "@/lib/server/data";
 import { getRelatedProvisionIndex } from "@/lib/server/related-provisions";
-import type { DerivedSegment, RelatedProvision } from "@/lib/types";
+import type { RelatedProvision } from "@/lib/types";
 
 export type CompareSection = {
   id: string;

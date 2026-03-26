@@ -56,3 +56,14 @@ export const instrumentManifest: InstrumentManifestEntry[] = [
 export const instrumentManifestBySlug = Object.fromEntries(
   instrumentManifest.map((entry) => [entry.slug, entry]),
 ) satisfies Record<string, InstrumentManifestEntry>;
+
+export const instrumentColorBySlug = {
+  "aged-care-act-2024": "var(--color-accent)",
+  "aged-care-rules-2025": "#4da872",
+  "aged-care-consequential-and-transitional-provisions-rules-2025": "#c4933a",
+} as const satisfies Record<string, string>;
+
+export function getInstrumentColor(slug: string): string {
+  return instrumentColorBySlug[slug as keyof typeof instrumentColorBySlug] ?? "var(--color-muted)";
+}
+

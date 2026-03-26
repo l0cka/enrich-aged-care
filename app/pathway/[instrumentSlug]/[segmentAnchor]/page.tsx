@@ -6,6 +6,7 @@ import { AddChainButton } from "@/components/add-chain-button";
 import { PathwayTree } from "@/components/pathway-tree";
 import { PinButton } from "@/components/pin-button";
 import { renderSegmentHtml } from "@/lib/render-segment-html";
+import { readParam } from "@/lib/search-params";
 import { getAllInstrumentBundles, getInstrumentBundle } from "@/lib/server/data";
 import { computePathway } from "@/lib/server/pathways";
 
@@ -13,10 +14,6 @@ type PathwayPageProps = {
   params: Promise<{ instrumentSlug: string; segmentAnchor: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function readParam(value: string | string[] | undefined): string {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
 
 export async function generateMetadata({ params }: PathwayPageProps): Promise<Metadata> {
   const { instrumentSlug, segmentAnchor } = await params;

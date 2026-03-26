@@ -59,7 +59,7 @@ export function PathwayTree({ pathway, instrumentTitles }: PathwayTreeProps) {
                     ) : null}
                     <Link
                       className="pathway-node__label"
-                      href={`/${node.instrumentSlug}#${node.segmentId}`}
+                      href={`/${node.instrumentSlug}#${node.anchor}`}
                     >
                       {node.label}
                     </Link>

@@ -243,6 +243,7 @@ export type PathwayRelationship =
 export type PathwayNode = {
   segmentId: string;
   instrumentSlug: string;
+  anchor: string;
   label: string;
   code: string | null;
   text: string;
