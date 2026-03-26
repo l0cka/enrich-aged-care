@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { CompareView } from "@/components/compare-view";
 import { getCompareData } from "@/lib/server/compare";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Compare Act & Rules",
   description: "Side-by-side view of Act provisions and the Rules that implement them.",
